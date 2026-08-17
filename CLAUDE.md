@@ -1,175 +1,175 @@
 # Home Assistant Custom Integration: Coolify Monitor
 
-## Ziel
+## Goal
 
-Eine Custom Component für Home Assistant, die eine selbst gehostete
-Coolify-Instanz überwacht: Server, Applications, Services und Datenbanken
-werden automatisch erkannt (Auto-Discovery) und als Entities dargestellt.
-Der Nutzer gibt nur Instanz-URL und API-Token an; danach wählt er per
-Options Flow aus, welche Ressourcen er als Entities/Dashboard sehen möchte.
+A custom component for Home Assistant that monitors a self-hosted Coolify
+instance: servers, applications, services and databases are auto-discovered
+and exposed as entities. The user only provides the instance URL and an API
+token; afterwards they use the options flow to choose which resources they
+want as entities/dashboard cards.
 
-Datenquelle: offizielle, dokumentierte Coolify REST-API (`/api/v1`) –
-kein Scraping, keine rechtlichen Fragezeichen.
+Data source: the official, documented Coolify REST API (`/api/v1`) — no
+scraping, no legal grey area.
 
-## Tech-Stack
+## Tech stack
 
-- Python 3.12+, Home Assistant Custom Component Architektur
-- `DataUpdateCoordinator` für zentrales Polling (ein Coordinator pro
-  Coolify-Instanz, versorgt alle Entities)
-- `config_flow.py` mit mehrstufigem Flow: 1) Verbindungsdaten, 2)
-  Auto-Discovery-Ergebnis anzeigen, 3) Auswahl der zu überwachenden
-  Ressourcen
-- `voluptuous` für Schema-Validierung
-- HTTP-Client: `aiohttp` (in HA core bereits vorhanden, kein zusätzliches
-  Requirement)
+- Python 3.14+, Home Assistant custom integration architecture (see
+  `AGENTS.md` for the enforced package layout and coding rules)
+- `DataUpdateCoordinator` for centralized polling (one coordinator per
+  Coolify instance, feeding all entities)
+- A multi-step config flow: 1) connection details, 2) show the
+  auto-discovery result, 3) select which resources to monitor
+- `voluptuous` for schema validation
+- HTTP client: `aiohttp` (already part of HA core, no extra requirement)
 
-## Domain
+## Identity
 
-`coolify`
+- **Domain:** `coolify_monitor`
+- **Class prefix:** `CoolifyMonitor`
+- **Repository:** Jings/hass-coolify-monitor
 
-## Authentifizierung
+This matches what `initialize.sh` already set up across `manifest.json`,
+`const.py` and `AGENTS.md` — use it everywhere, never the shorter `coolify`
+variant from earlier drafts of this plan.
 
-- Bearer-Token-Auth (Laravel Sanctum), kein OAuth
-- Nutzer erstellt Token selbst in Coolify UI unter "Keys & Tokens" →
-  "API tokens"
-- Token wird im Config Flow als Passwort-Feld abgefragt (`vol.Required
-mit selector.TextSelector(TextSelectorConfig(type="password"))`)
-- Empfehlung in der Doku: Token mit "Read Only"-Ability erstellen, da die
-  Integration nur liest (kein Deploy/Restart in v1)
-- Rate Limit beachten: Coolify limitiert standardmäßig auf 200
-  Requests/Minute – bei Polling weit darunter bleiben (siehe
-  Update-Intervall unten)
-- Token wird via `entry.data` gespeichert; für zukünftige HA-Versionen
-  ggf. `entry.options` für nicht-sensible Auswahl-Daten nutzen
+## Authentication
 
-## Ordnerstruktur
+- Bearer token auth (Laravel Sanctum), no OAuth
+- The user creates the token themselves in the Coolify UI under
+  "Keys & Tokens" → "API tokens"
+- The token is collected in the config flow as a password field
+  (`vol.Required` with `selector.TextSelector(TextSelectorConfig(type="password"))`)
+- Documentation should recommend creating the token with the "Read Only"
+  ability, since the integration only reads (no deploy/restart in v1)
+- Respect the rate limit: Coolify defaults to 200 requests/minute — stay
+  well under that when polling (see update interval below)
+- The token is stored via `entry.data`; non-sensitive selection data (which
+  resources to monitor) goes in `entry.options` instead — see
+  `.agents/instructions/blueprint.config_flow.instructions.md` for the
+  data-vs-options split this project enforces
 
-```sh
-custom_components/coolify/
-├── __init__.py           # Setup/Unload, Coordinator-Instanziierung
-├── manifest.json         # Metadata, iot_class: local_polling
-├── const.py              # DOMAIN, CONF_-Konstanten, Defaults
-├── config_flow.py         # Mehrstufiger Flow: Connect → Discover → Select
-├── coordinator.py          # DataUpdateCoordinator, ruft api.py auf
-├── api.py                 # Dünner Client-Wrapper um die Coolify-REST-API
-├── binary_sensor.py        # Running/Stopped-Status pro Ressource
-├── sensor.py               # Metriken (CPU/RAM, letzter Deploy, etc.)
-├── entity.py               # Gemeinsame CoolifyEntity-Basisklasse
-├── strings.json            # UI-Texte
-└── translations/de.json    # Deutsche Übersetzung
-```
+## Where the code lives
 
-## Schritt-für-Schritt-Plan
+Package layout, naming and the three-layer architecture (entities →
+coordinator → API client) are fixed by `AGENTS.md` § Integration Structure —
+this plan does not repeat them. In short: the real API client goes in
+`api/`, the coordinator in `coordinator/`, the config/options flow in
+`config_flow_handler/`, and each entity platform gets its own package
+(`sensor/`, `binary_sensor/`, …) with one entity class per file.
 
-### 1. API-Layer (`api.py`)
+## Step-by-step plan
 
-- Dünner async Client um die relevanten Endpoints:
-  - `GET /api/v1/version` — für Verbindungstest im Config Flow
-  - `GET /api/v1/servers` — Serverliste inkl. Status
-  - `GET /api/v1/applications` — Applications inkl. Status, letzter Deploy
-  - `GET /api/v1/databases` — Datenbank-Ressourcen
-  - `GET /api/v1/services` — Services (z.B. Immich, Home Assistant selbst)
-- Eigene Exception-Hierarchie: `CoolifyConnectionError` (Netzwerk/Timeout),
-  `CoolifyAuthError` (401/403 → falscher/abgelaufener Token)
-- Alle Responses in `dataclasses` oder `TypedDict` typisieren, damit
-  Discovery und Sensoren dieselbe Struktur nutzen
-- Timeout großzügig genug für VPS-Instanzen mit vielen Ressourcen (z.B. 15s)
+### 1. API layer (`api/client.py`)
 
-### 2. Config Flow – Schritt 1: Verbindung (`config_flow.py`)
+- A thin async client around the relevant endpoints:
+  - `GET /api/v1/version` — for the connection test in the config flow
+  - `GET /api/v1/servers` — server list incl. status
+  - `GET /api/v1/applications` — applications incl. status, last deploy
+  - `GET /api/v1/databases` — database resources
+  - `GET /api/v1/services` — services (e.g. Immich, Home Assistant itself)
+- Own exception hierarchy: `CoolifyMonitorApiClientCommunicationError`
+  (network/timeout), `CoolifyMonitorApiClientAuthenticationError` (401/403 →
+  wrong or expired token) — see `blueprint.coordinator.instructions.md` for
+  the required shape
+- Type all responses (`dataclasses` or `TypedDict`) so discovery and the
+  coordinator/entities use the same structure
+- Timeout generous enough for VPS instances with many resources (e.g. 15s)
 
-- Formular: `url` (Instanz-URL, z.B. `https://coolify.example.com`),
-  `api_token` (Passwort-Feld)
-- `async def validate_input`: Testaufruf gegen `/api/v1/version`, um Host
-  - Token gemeinsam zu prüfen, bevor der Entry angelegt wird
-- Fehlerbehandlung: `cannot_connect` (URL falsch/nicht erreichbar) vs.
-  `invalid_auth` (Token falsch) als getrennte Fehlermeldungen im Formular
+### 2. Config flow — step 1: connection (`config_flow_handler/config_flow.py`)
 
-### 3. Config Flow – Schritt 2: Auto-Discovery
+- Form: `url` (instance URL, e.g. `https://coolify.example.com`),
+  `api_token` (password field)
+- Validate by calling `/api/v1/version` to check host and token together
+  before the entry is created
+- Separate error keys: `cannot_connect` (URL wrong/unreachable) vs.
+  `invalid_auth` (token wrong)
 
-- Nach erfolgreicher Verbindung: alle vier Endpoints (`servers`,
-  `applications`, `databases`, `services`) parallel abfragen
-  (`asyncio.gather`)
-- Ergebnis dem Nutzer nicht nur "durchwinken", sondern in einem
-  Zwischenschritt zusammenfassen (z.B. "Gefunden: 1 Server, 4
-  Applications, 2 Databases, 1 Service") — schafft Vertrauen, dass
-  Discovery funktioniert hat
+### 3. Config flow — step 2: auto-discovery
 
-### 4. Config Flow – Schritt 3: Auswahl der Ressourcen
+- After a successful connection: query all four endpoints (`servers`,
+  `applications`, `databases`, `services`) concurrently (`asyncio.gather`)
+- Don't just wave the result through — summarize it in an intermediate step
+  (e.g. "Found: 1 server, 4 applications, 2 databases, 1 service") to build
+  confidence that discovery actually worked
 
-- Multi-Select-Formular (`selector.SelectSelector` mit `multiple: true`),
-  gruppiert nach Kategorie (Server / Applications / Databases / Services),
-  vorbelegt mit "alles ausgewählt" als sinnvollem Default
-- Ausgewählte UUIDs werden in `entry.data["selected_resources"]`
-  gespeichert
-- **Options Flow** repliziert exakt diesen Auswahlschritt, inkl. erneuter
-  Discovery (falls seit der Ersteinrichtung neue Apps hinzugekommen sind)
-  — so kann der Nutzer jederzeit nachjustieren, ohne die Integration neu
-  einzurichten
+### 4. Config flow — step 3: resource selection
 
-### 5. Coordinator (`coordinator.py`)
+- Multi-select form (`selector.SelectSelector` with `multiple: true`),
+  grouped by category (Server / Applications / Databases / Services),
+  pre-selected with "everything selected" as a sensible default
+- Selected UUIDs are stored in `entry.options["selected_resources"]`
+  (this is user-tunable behavior, not connection identity — see the
+  data-vs-options split above)
+- The **options flow** replicates this exact selection step, including a
+  fresh discovery run (in case new apps were added since initial setup) —
+  so the user can adjust at any time without re-adding the integration
 
-- Ein Coordinator pro Config Entry, `update_interval` konfigurierbar
-  (Default z.B. 60s – Coolify-Metriken ändern sich schneller als
-  Heizölpreise, aber 200 req/min Limit im Hinterkopf behalten, siehe
-  Rate-Limit-Hinweis oben)
-- `_async_update_data()`: ruft nur die vom Nutzer ausgewählten Ressourcen
-  ab (kein unnötiger Traffic für abgewählte Items), aggregiert in einem
-  Dict pro Ressourcen-UUID
-- `UpdateFailed` bei Verbindungsfehlern; bei `CoolifyAuthError` gezielt
-  eine Reauth-Flow triggern (`async_start_reauth`), falls der Token
-  abgelaufen/widerrufen wurde
+### 5. Coordinator (`coordinator/base.py`)
+
+- One coordinator per config entry, `update_interval` configurable via
+  `entry.options` (default e.g. 60s — Coolify metrics change faster than
+  once a day, but keep the 200 req/min limit in mind, see the rate-limit
+  note above)
+- `_async_update_data()`: fetches only the resources the user selected (no
+  unnecessary traffic for deselected items), aggregates into a dict keyed by
+  resource UUID
+- Raise `UpdateFailed` on connection errors; raise `ConfigEntryAuthFailed`
+  when the API reports invalid credentials, so Home Assistant triggers the
+  reauth flow if the token expired or was revoked
 
 ### 6. Entities
 
-- **`entity.py`**: `CoolifyEntity(CoordinatorEntity)` als Basisklasse,
-  liest die eigene Ressource per UUID aus `coordinator.data`, setzt
-  `device_info` (ein HA-"Device" pro Coolify-Ressource, damit Sensoren
-  sauber gruppiert erscheinen, z.B. "App: recipe-app")
-- **`binary_sensor.py`**: Running/Stopped/Degraded-Status je Server,
-  Application, Database, Service
-- **`sensor.py`**:
-  - Applications: Status-Text, letzter Deployment-Zeitpunkt,
-    Deployment-Ergebnis (success/failed)
-  - Server: CPU/RAM-Auslastung (falls API das liefert), Anzahl laufender
-    Container
-  - Databases/Services: Status, ggf. Version
-- Entities werden dynamisch nur für ausgewählte Ressourcen erstellt
-  (`async_setup_entry` iteriert über `entry.data["selected_resources"]`)
+- **`entity/base.py`**: `CoolifyMonitorEntity(CoordinatorEntity)` as the
+  base class, reads its own resource by UUID from `coordinator.data`, sets
+  `device_info` (one HA "device" per Coolify resource, so entities group
+  cleanly, e.g. "App: recipe-app")
+- **`binary_sensor/`**: running/stopped/degraded status per server,
+  application, database, service
+- **`sensor/`**:
+  - Applications: status text, last deployment timestamp, deployment result
+    (success/failed)
+  - Server: CPU/RAM usage (if the API provides it), number of running
+    containers
+  - Databases/services: status, version if available
+- Entities are created dynamically only for selected resources
+  (`async_setup_entry` iterates over `entry.options["selected_resources"]`)
 
-### 7. Dashboard-Aspekt ("auf dem Dashboard darstellen")
+### 7. Dashboard aspect ("show it on the dashboard")
 
-- Für v1: keine eigene Lovelace-Card programmieren, sondern die
-  Device-Gruppierung (Schritt 6) so sauber gestalten, dass HA's
-  Auto-Dashboard direkt brauchbare Karten pro Ressource erzeugt
-- Optional für später: ein eigenes Lovelace-Strategy-Element oder eine
-  Doku mit Beispiel-Dashboard-YAML (kein Muss für die erste Version)
+- For v1: no custom Lovelace card — instead make the device grouping (step 6) clean enough that HA's auto-generated dashboard produces usable cards
+  per resource out of the box
+- Optional for later: a custom Lovelace strategy element, or docs with
+  example dashboard YAML (not required for the first version)
 
 ### 8. Testing
 
-- Gegen deine reale Coolify-Instanz testen: Config Flow durchlaufen,
-  prüfen ob Discovery alle aktuellen Apps/Services findet
-  (Rezept-App, ehemalige Heizöl-App-Reste, etc.)
-- Fehlerfälle: falscher Token, Instanz offline, Token nachträglich in
-  Coolify widerrufen (Reauth-Flow sollte greifen)
-- Prüfen, ob neu hinzugefügte Coolify-Apps über die Options-Flow-Discovery
-  nachträglich auswählbar werden
+- Test against a real Coolify instance: run through the config flow, check
+  that discovery finds all current apps/services
+- Failure cases: wrong token, instance offline, token revoked afterwards in
+  Coolify (the reauth flow should kick in)
+- Check that newly added Coolify apps become selectable afterwards via the
+  options-flow discovery
 
-### 9. Optional (später, nicht für v1 nötig)
+### 9. Optional (later, not needed for v1)
 
-- Action-Entities zum Neustarten/Redeployen einer Application direkt aus
-  HA (`write`/`deploy`-Ability des Tokens erfordert dann höhere Rechte —
-  bewusste Entscheidung, ob das gewünscht ist, da mehr Risiko als
-  Read-Only)
-- Diagnostics-Support für Debug-Export (Token maskiert)
-- HACS-Veröffentlichung, sobald v1 stabil läuft — hier gibt es anders als
-  beim Heizöl-Projekt keine rechtlichen Hürden, nur Code-Qualität/Docs
+- Action entities to restart/redeploy an application directly from HA
+  (requires a token with `write`/`deploy` ability — a deliberate decision,
+  since that carries more risk than read-only)
+- Diagnostics support for debug export (token redacted — required either
+  way per `AGENTS.md`)
+- HACS publication once v1 is stable — no legal hurdles here, just code
+  quality/docs
 
-## Offene Punkte, die du vor dem Start klären solltest
+## Open questions to settle before starting
 
-- Welche Felder liefert `/api/v1/servers` tatsächlich für
-  CPU/RAM-Auslastung? (In der API-Referenz gegenprüfen, ob das
-  überhaupt vorhanden ist oder ob dafür der separate "Sentinel"-Agent
-  nötig ist, den Coolify für Server-Metriken nutzt)
-- Token-Berechtigungsstufen in deiner Coolify-Version testen (ältere
-  Versionen hatten laut Community-Diskussion nur "Read Only" vs. "\*" ohne
-  granularere Abstufung – relevant für die Doku-Empfehlung an Nutzer)
+- Which fields does `/api/v1/servers` actually return for CPU/RAM usage?
+  (Check against the API reference — this data may not be available at all
+  without Coolify's separate "Sentinel" agent for server metrics)
+- Test the token permission levels on your actual Coolify version (older
+  versions reportedly only had "Read Only" vs. "\*" without finer-grained
+  scopes — relevant for the documentation recommendation to users)
+- `manifest.json` currently sets `iot_class: cloud_polling` from the
+  initializer's default. Decide deliberately: `local_polling` fits a
+  self-hosted instance reached over the LAN, `cloud_polling` fits one
+  reached only through a public URL. See
+  `.agents/instructions/blueprint.manifest.instructions.md`.
