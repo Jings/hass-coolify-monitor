@@ -1,5 +1,5 @@
 """Validators for config flow inputs."""
 
-from .credentials import validate_credentials
+from .connection import validate_connection
 
-__all__ = ["validate_credentials"]
+__all__ = ["validate_connection"]

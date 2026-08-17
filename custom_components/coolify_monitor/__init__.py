@@ -8,7 +8,7 @@ https://github.com/Jings/hass-coolify-monitor
 from datetime import timedelta
 from typing import TYPE_CHECKING
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
+from homeassistant.const import CONF_API_TOKEN, CONF_URL, Platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 from homeassistant.loader import async_get_loaded_integration
@@ -56,8 +56,8 @@ async def async_setup_entry(
 
     """
     client = CoolifyMonitorApiClient(
-        username=entry.data[CONF_USERNAME],
-        password=entry.data[CONF_PASSWORD],
+        base_url=entry.data[CONF_URL],
+        api_token=entry.data[CONF_API_TOKEN],
         session=async_get_clientsession(hass),
     )
 

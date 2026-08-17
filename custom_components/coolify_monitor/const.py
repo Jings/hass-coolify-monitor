@@ -5,7 +5,7 @@ from logging import Logger, getLogger
 LOGGER: Logger = getLogger(__package__)
 
 DOMAIN = "coolify_monitor"
-ATTRIBUTION = "Data provided by http://jsonplaceholder.typicode.com/"
+ATTRIBUTION = "Data provided by your Coolify instance"
 
 CONF_UPDATE_INTERVAL_HOURS = "update_interval_hours"
 

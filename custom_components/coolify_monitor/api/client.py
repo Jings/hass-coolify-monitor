@@ -6,11 +6,8 @@ from typing import Any
 
 import aiohttp
 
-API_URL = "https://jsonplaceholder.typicode.com/posts/1"
-REQUEST_TIMEOUT = 10
-
-FAN_SPEEDS = ("low", "medium", "high", "auto")
-SPEED_PERCENTAGES = {"low": 33, "medium": 66, "high": 100, "auto": 66}
+API_BASE_PATH = "/api/v1"
+REQUEST_TIMEOUT = 15
 
 
 class CoolifyMonitorApiClientError(Exception):
@@ -39,132 +36,56 @@ def _verify_response_or_raise(response: aiohttp.ClientResponse) -> None:
 
     """
     if response.status in (401, 403):
-        msg = "Invalid credentials"
+        msg = "Invalid or revoked API token"
         raise CoolifyMonitorApiClientAuthenticationError(msg)
     response.raise_for_status()
 
 
 class CoolifyMonitorApiClient:
-    """
-    Stand-in for the client of a real device or service.
-
-    JSONPlaceholder is queried so that a real request happens on every poll, and its
-    response is turned into a device-shaped payload. The writable values are kept in
-    memory because the demo endpoint stores nothing; a real client sends them to the
-    device and reads them back on the next poll.
-    """
+    """Thin async client for the Coolify REST API (`/api/v1`)."""
 
     def __init__(
         self,
-        username: str,
-        password: str,
+        base_url: str,
+        api_token: str,
         session: aiohttp.ClientSession,
     ) -> None:
         """Initialize the API client."""
-        self._username = username
-        self._password = password
+        self._base_url = base_url.rstrip("/")
+        self._api_token = api_token
         self._session = session
-        self._settings: dict[str, Any] = {
-            "fan_on": True,
-            "fan_speed": "auto",
-            "child_lock": False,
-            "led_display": True,
-            "target_humidity": 50.0,
-        }
-        self._filter_reset_offset = 0
 
-    async def async_get_data(self) -> dict[str, Any]:
+    async def async_get_servers(self) -> list[dict[str, Any]]:
         """
-        Fetch the current device state.
+        Fetch every server known to this Coolify instance.
 
         Returns:
-            The device state, keyed the way entities read it.
+            The raw server list, exactly as Coolify returns it.
 
         """
-        response = await self._api_wrapper(method="get", url=API_URL)
-        return self._build_payload(response)
+        return await self._api_wrapper("get", "/servers")
 
-    async def async_set_fan_speed(self, speed: str) -> None:
-        """Set the fan speed."""
-        await self._api_wrapper(
-            method="patch",
-            url=API_URL,
-            data={"fan_speed": speed},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
-        self._settings["fan_speed"] = speed
-        self._settings["fan_on"] = True
+    async def async_get_applications(self) -> list[dict[str, Any]]:
+        """
+        Fetch every application known to this Coolify instance.
 
-    async def async_set_fan_state(self, *, is_on: bool) -> None:
-        """Turn the fan on or off."""
-        await self._api_wrapper(
-            method="patch",
-            url=API_URL,
-            data={"fan_on": is_on},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
-        self._settings["fan_on"] = is_on
+        Returns:
+            The raw application list, exactly as Coolify returns it.
 
-    async def async_set_target_humidity(self, humidity: float) -> None:
-        """Set the target humidity."""
-        await self._api_wrapper(
-            method="patch",
-            url=API_URL,
-            data={"target_humidity": humidity},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
-        self._settings["target_humidity"] = humidity
+        """
+        return await self._api_wrapper("get", "/applications")
 
-    async def async_set_toggle(self, key: str, *, enabled: bool) -> None:
-        """Set one of the device's boolean settings."""
-        await self._api_wrapper(
-            method="patch",
-            url=API_URL,
-            data={key: enabled},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
-        self._settings[key] = enabled
+    async def async_get_databases(self) -> list[dict[str, Any]]:
+        """
+        Fetch every database known to this Coolify instance.
 
-    async def async_reset_filter(self) -> None:
-        """Reset the filter timer."""
-        await self._api_wrapper(
-            method="post",
-            url=API_URL,
-            data={"command": "reset_filter"},
-            headers={"Content-type": "application/json; charset=UTF-8"},
-        )
-        self._filter_reset_offset = 0
+        Returns:
+            The raw database list, exactly as Coolify returns it.
 
-    def _build_payload(self, response: dict[str, Any]) -> dict[str, Any]:
-        """Derive a device-shaped payload from the demo endpoint's response."""
-        seed = int(response.get("userId", 1)) * 47 + int(response.get("id", 1)) * 13
-        fan_speed = str(self._settings["fan_speed"])
-        filter_life = max(0, 100 - (seed % 100) - self._filter_reset_offset)
+        """
+        return await self._api_wrapper("get", "/databases")
 
-        return {
-            "model": "Blueprint Air Purifier",
-            "serial_number": f"BP-{seed:06d}",
-            "sw_version": "1.4.2",
-            "air_quality_index": seed % 501,
-            "pm25": round((seed * 0.37) % 300, 1),
-            "filter_life": filter_life,
-            "filter_replacement": filter_life < 10,
-            "runtime": (seed * 12) % 10000,
-            "fan_on": self._settings["fan_on"],
-            "fan_speed": fan_speed,
-            "fan_percentage": SPEED_PERCENTAGES[fan_speed] if self._settings["fan_on"] else 0,
-            "child_lock": self._settings["child_lock"],
-            "led_display": self._settings["led_display"],
-            "target_humidity": self._settings["target_humidity"],
-        }
-
-    async def _api_wrapper(
-        self,
-        method: str,
-        url: str,
-        data: dict[str, Any] | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> dict[str, Any]:
+    async def _api_wrapper(self, method: str, path: str) -> Any:
         """
         Perform a request and translate transport errors into client exceptions.
 
@@ -172,7 +93,7 @@ class CoolifyMonitorApiClient:
             The decoded JSON response.
 
         Raises:
-            CoolifyMonitorApiClientAuthenticationError: If the credentials are rejected.
+            CoolifyMonitorApiClientAuthenticationError: If the token is rejected.
             CoolifyMonitorApiClientCommunicationError: If the request does not complete.
             CoolifyMonitorApiClientError: For any other failure.
 
@@ -181,9 +102,8 @@ class CoolifyMonitorApiClient:
             async with asyncio.timeout(REQUEST_TIMEOUT):
                 response = await self._session.request(
                     method=method,
-                    url=url,
-                    headers=headers,
-                    json=data,
+                    url=f"{self._base_url}{API_BASE_PATH}{path}",
+                    headers={"Authorization": f"Bearer {self._api_token}"},
                 )
                 _verify_response_or_raise(response)
                 return await response.json()

@@ -4,47 +4,48 @@
       "user": {
         "description": "If you need help with the configuration have a look at the [documentation]({documentation_url}).",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "url": "Instance URL",
+          "api_token": "API token"
         },
         "data_description": {
-          "username": "The account name you use to sign in to the device.",
-          "password": "The password for that account. It is stored encrypted and never written to the log."
+          "url": "The address of your Coolify instance, including the scheme (http or https).",
+          "api_token": "A Read Only API token, created in Coolify under Keys & Tokens. It is stored encrypted and never written to the log."
         }
       },
       "reconfigure": {
-        "description": "Update the credentials for this integration.",
+        "description": "Update the connection details for this integration.",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "url": "Instance URL",
+          "api_token": "API token"
         },
         "data_description": {
-          "username": "The account name you use to sign in to the device.",
-          "password": "The password for that account."
+          "url": "The address of your Coolify instance, including the scheme (http or https).",
+          "api_token": "A Read Only API token, created in Coolify under Keys & Tokens."
         }
       },
       "reauth_confirm": {
         "title": "Reauthenticate integration",
-        "description": "The credentials for {username} are no longer valid. Provide updated credentials to restore access.",
+        "description": "The API token for {url} is no longer valid. Provide an updated token to restore access.",
         "data": {
-          "username": "Username",
-          "password": "Password"
+          "url": "Instance URL",
+          "api_token": "API token"
         },
         "data_description": {
-          "username": "The account name you use to sign in to the device.",
-          "password": "The current password for that account."
+          "url": "The address of your Coolify instance, including the scheme (http or https).",
+          "api_token": "The current, valid API token for that instance."
         }
       }
     },
     "error": {
-      "cannot_connect": "Unable to connect to the server.",
-      "invalid_auth": "The username or password is wrong.",
+      "cannot_connect": "Unable to connect to the Coolify instance.",
+      "invalid_auth": "The API token is invalid or has been revoked.",
       "unknown": "An unknown error occurred."
     },
     "abort": {
       "already_configured": "This entry is already configured.",
       "reauth_successful": "Reauthentication was successful.",
-      "reconfigure_successful": "Reconfiguration was successful."
+      "reconfigure_successful": "Reconfiguration was successful.",
+      "unique_id_mismatch": "This URL and token belong to a different Coolify instance than the one already configured."
     }
   },
   "options": {
@@ -56,7 +57,7 @@
           "update_interval_hours": "Update interval (hours)"
         },
         "data_description": {
-          "update_interval_hours": "How often to fetch the device state, between 0.25 and 24 hours."
+          "update_interval_hours": "How often to fetch data from Coolify, between 0.25 and 24 hours."
         }
       }
     }
@@ -66,7 +67,7 @@
       "message": "Authentication failed during the data update."
     },
     "update_failed": {
-      "message": "Failed to fetch data from the device."
+      "message": "Failed to fetch data from the Coolify instance."
     },
     "entry_not_found": {
       "message": "No configuration entry of this integration matches {target}."
@@ -78,7 +79,7 @@
   "services": {
     "refresh_data": {
       "name": "Refresh data",
-      "description": "Fetches the current device state immediately instead of waiting for the next poll.",
+      "description": "Fetches the current Coolify state immediately instead of waiting for the next poll.",
       "fields": {
         "config_entry_id": {
           "name": "Integration entry",

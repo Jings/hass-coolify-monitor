@@ -8,11 +8,53 @@ import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.coolify_monitor.const import DOMAIN
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_API_TOKEN, CONF_URL
 from homeassistant.core import HomeAssistant
 
-# The response the demo endpoint returns; the client turns it into the device payload.
-API_RESPONSE: dict[str, Any] = {"userId": 1, "id": 1, "title": "demo", "body": "demo"}
+HOST_SERVER_UUID = "demo-server-uuid"
+_HOST_SERVER_REF = {"uuid": HOST_SERVER_UUID, "name": "localhost"}
+
+SERVERS_RESPONSE: list[dict[str, Any]] = [
+    {
+        "uuid": HOST_SERVER_UUID,
+        "name": "localhost",
+        "description": "Demo server",
+        "is_reachable": True,
+        "is_usable": True,
+        "is_coolify_host": True,
+    },
+]
+
+APPLICATIONS_RESPONSE: list[dict[str, Any]] = [
+    {
+        "uuid": "demo-app-uuid",
+        "name": "demo-app",
+        "description": "Demo application",
+        "status": "running:healthy",
+        "fqdn": "https://demo.example.com",
+        "git_repository": "demo/app",
+        "git_branch": "main",
+        "destination": {"server": _HOST_SERVER_REF},
+    },
+]
+
+DATABASES_RESPONSE: list[dict[str, Any]] = [
+    {
+        "uuid": "demo-db-uuid",
+        "name": "demo-db",
+        "description": "Demo database",
+        "status": "running:healthy",
+        "database_type": "standalone-postgresql",
+        "image": "postgres:17-alpine",
+        "destination": {"server": _HOST_SERVER_REF},
+    },
+]
+
+_RESPONSES_BY_PATH = {
+    "/servers": SERVERS_RESPONSE,
+    "/applications": APPLICATIONS_RESPONSE,
+    "/databases": DATABASES_RESPONSE,
+}
 
 
 @pytest.fixture(autouse=True)
@@ -22,11 +64,15 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
 
 @pytest.fixture
 def mock_api() -> Generator[AsyncMock]:
-    """Replace the client's HTTP layer, keeping its payload logic under test."""
+    """Replace the client's HTTP layer, returning canned resource lists."""
+
+    async def _respond(method: str, path: str) -> Any:
+        return _RESPONSES_BY_PATH[path]
+
     with patch(
         "custom_components.coolify_monitor.api.client.CoolifyMonitorApiClient._api_wrapper",
         new_callable=AsyncMock,
-        return_value=API_RESPONSE,
+        side_effect=_respond,
     ) as api_wrapper:
         yield api_wrapper
 
@@ -36,9 +82,9 @@ def config_entry() -> MockConfigEntry:
     """Return a config entry for this integration."""
     return MockConfigEntry(
         domain=DOMAIN,
-        title="demo",
-        unique_id="demo",
-        data={CONF_USERNAME: "demo", CONF_PASSWORD: "secret"},
+        title="https://demo.example.com",
+        unique_id=HOST_SERVER_UUID,
+        data={CONF_URL: "https://demo.example.com", CONF_API_TOKEN: "secret"},
     )
 
 

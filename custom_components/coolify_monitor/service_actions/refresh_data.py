@@ -33,7 +33,11 @@ async def async_handle_refresh_data(hass: HomeAssistant, call: ServiceCall) -> S
     return {
         "refreshed_at": dt_util.utcnow().isoformat(),
         "success": coordinator.last_update_success,
-        "value_count": len(coordinator.data),
+        "value_count": (
+            len(coordinator.data["servers"])
+            + len(coordinator.data["applications"])
+            + len(coordinator.data["databases"])
+        ),
     }
 
 

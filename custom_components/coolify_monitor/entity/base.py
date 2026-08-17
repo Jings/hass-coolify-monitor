@@ -18,6 +18,11 @@ class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator
     The unique ID is `{entry_id}_{key}`, the documented identifier of last resort.
     A real integration switches to the device's serial, MAC or account ID before its
     first release, because changing it afterwards needs a registry migration.
+
+    Every entity is grouped under one placeholder device for the whole config entry.
+    This is temporary: once real sensor/binary_sensor entities exist, each Coolify
+    resource (server, application, database) becomes its own device, and this class
+    is rebuilt to take a resource kind and UUID instead of assuming a single device.
     """
 
     _attr_attribution = ATTRIBUTION
@@ -40,8 +45,5 @@ class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator
                 ),
             },
             name=coordinator.config_entry.title,
-            manufacturer="Coolify Monitor",
-            model=coordinator.data["model"],
-            serial_number=coordinator.data["serial_number"],
-            sw_version=coordinator.data["sw_version"],
+            manufacturer="Coolify",
         )

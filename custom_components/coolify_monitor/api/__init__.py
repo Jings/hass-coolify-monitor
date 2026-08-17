@@ -11,7 +11,6 @@ in the integration imports this package.
 """
 
 from .client import (
-    FAN_SPEEDS,
     CoolifyMonitorApiClient,
     CoolifyMonitorApiClientAuthenticationError,
     CoolifyMonitorApiClientCommunicationError,
@@ -19,7 +18,6 @@ from .client import (
 )
 
 __all__ = [
-    "FAN_SPEEDS",
     "CoolifyMonitorApiClient",
     "CoolifyMonitorApiClientAuthenticationError",
     "CoolifyMonitorApiClientCommunicationError",

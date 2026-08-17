@@ -5,20 +5,14 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.const import CONF_API_TOKEN, CONF_URL
 from homeassistant.helpers import selector
 
-_USERNAME_SELECTOR = selector.TextSelector(
-    selector.TextSelectorConfig(
-        type=selector.TextSelectorType.TEXT,
-        autocomplete="username",
-    ),
+_URL_SELECTOR = selector.TextSelector(
+    selector.TextSelectorConfig(type=selector.TextSelectorType.URL),
 )
-_PASSWORD_SELECTOR = selector.TextSelector(
-    selector.TextSelectorConfig(
-        type=selector.TextSelectorType.PASSWORD,
-        autocomplete="current-password",
-    ),
+_API_TOKEN_SELECTOR = selector.TextSelector(
+    selector.TextSelectorConfig(type=selector.TextSelectorType.PASSWORD),
 )
 
 
@@ -30,27 +24,27 @@ def get_user_schema(defaults: Mapping[str, Any] | None = None) -> vol.Schema:
         defaults: Previously submitted values, used to pre-fill the form.
 
     Returns:
-        The voluptuous schema for the credentials form.
+        The voluptuous schema for the connection form.
 
     """
     defaults = defaults or {}
     return vol.Schema(
         {
             vol.Required(
-                CONF_USERNAME,
-                default=defaults.get(CONF_USERNAME, vol.UNDEFINED),
-            ): _USERNAME_SELECTOR,
-            vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+                CONF_URL,
+                default=defaults.get(CONF_URL, vol.UNDEFINED),
+            ): _URL_SELECTOR,
+            vol.Required(CONF_API_TOKEN): _API_TOKEN_SELECTOR,
         },
     )
 
 
-def get_reconfigure_schema(username: str) -> vol.Schema:
+def get_reconfigure_schema(url: str) -> vol.Schema:
     """
     Build the schema for the reconfigure step.
 
     Args:
-        username: The entry's current username, used to pre-fill the form.
+        url: The entry's current instance URL, used to pre-fill the form.
 
     Returns:
         The voluptuous schema for the reconfigure form.
@@ -58,18 +52,18 @@ def get_reconfigure_schema(username: str) -> vol.Schema:
     """
     return vol.Schema(
         {
-            vol.Required(CONF_USERNAME, default=username): _USERNAME_SELECTOR,
-            vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+            vol.Required(CONF_URL, default=url): _URL_SELECTOR,
+            vol.Required(CONF_API_TOKEN): _API_TOKEN_SELECTOR,
         },
     )
 
 
-def get_reauth_schema(username: str) -> vol.Schema:
+def get_reauth_schema(url: str) -> vol.Schema:
     """
     Build the schema for the reauth step.
 
     Args:
-        username: The entry's current username, used to pre-fill the form.
+        url: The entry's current instance URL, used to pre-fill the form.
 
     Returns:
         The voluptuous schema for the reauth form.
@@ -77,8 +71,8 @@ def get_reauth_schema(username: str) -> vol.Schema:
     """
     return vol.Schema(
         {
-            vol.Required(CONF_USERNAME, default=username): _USERNAME_SELECTOR,
-            vol.Required(CONF_PASSWORD): _PASSWORD_SELECTOR,
+            vol.Required(CONF_URL, default=url): _URL_SELECTOR,
+            vol.Required(CONF_API_TOKEN): _API_TOKEN_SELECTOR,
         },
     )
 

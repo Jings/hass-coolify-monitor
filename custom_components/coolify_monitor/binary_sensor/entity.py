@@ -2,8 +2,8 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any
 
+from custom_components.coolify_monitor.coordinator import CoolifyMonitorCoordinatorData
 from custom_components.coolify_monitor.entity import CoolifyMonitorEntity
 from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorEntityDescription
 
@@ -12,7 +12,7 @@ from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySen
 class CoolifyMonitorBinarySensorEntityDescription(BinarySensorEntityDescription):
     """Describes a binary sensor and how to read it from coordinator data."""
 
-    value_fn: Callable[[dict[str, Any]], bool | None]
+    value_fn: Callable[[CoolifyMonitorCoordinatorData], bool | None]
 
 
 class CoolifyMonitorBinarySensor(BinarySensorEntity, CoolifyMonitorEntity):

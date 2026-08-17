@@ -62,11 +62,15 @@ this plan does not repeat them. In short: the real API client goes in
 ### 1. API layer (`api/client.py`)
 
 - A thin async client around the relevant endpoints:
-  - `GET /api/v1/version` — for the connection test in the config flow
-  - `GET /api/v1/servers` — server list incl. status
+  - `GET /api/v1/servers` — server list incl. status; also doubles as the
+    config flow's connection test, since the entry it doesn't have to search
+    for (`is_coolify_host: true`) gives us a stable per-instance unique ID
+    for free, in the same call
   - `GET /api/v1/applications` — applications incl. status, last deploy
   - `GET /api/v1/databases` — database resources
-  - `GET /api/v1/services` — services (e.g. Immich, Home Assistant itself)
+  - `GET /api/v1/services` — services (e.g. Immich, Home Assistant itself) —
+    deferred until a real payload can be captured (see the services section
+    of this plan)
 - Own exception hierarchy: `CoolifyMonitorApiClientCommunicationError`
   (network/timeout), `CoolifyMonitorApiClientAuthenticationError` (401/403 →
   wrong or expired token) — see `blueprint.coordinator.instructions.md` for
@@ -79,10 +83,15 @@ this plan does not repeat them. In short: the real API client goes in
 
 - Form: `url` (instance URL, e.g. `https://coolify.example.com`),
   `api_token` (password field)
-- Validate by calling `/api/v1/version` to check host and token together
-  before the entry is created
+- Validate by calling `/api/v1/servers`: a successful response proves the URL
+  and token both work, and its `is_coolify_host: true` entry supplies the
+  unique ID — no separate `/version` call needed
 - Separate error keys: `cannot_connect` (URL wrong/unreachable) vs.
   `invalid_auth` (token wrong)
+- Reconfigure and reauth re-run the same validation and compare the
+  discovered unique ID against the entry's existing one
+  (`_abort_if_unique_id_mismatch()`), so pointing the form at a different
+  Coolify instance aborts instead of silently adopting it
 
 ### 3. Config flow — step 2: auto-discovery
 
