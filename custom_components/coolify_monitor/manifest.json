@@ -1,0 +1,14 @@
+{
+  "domain": "coolify_monitor",
+  "name": "Coolify Monitor",
+  "codeowners": [
+    "@Jings"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/Jings/hass-coolify-monitor",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Jings/hass-coolify-monitor/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
