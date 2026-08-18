@@ -2,26 +2,27 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import cast
 
-from custom_components.coolify_monitor.coordinator import CoolifyMonitorCoordinatorData
 from custom_components.coolify_monitor.entity import CoolifyMonitorEntity
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.helpers.typing import StateType
 
 
 @dataclass(frozen=True, kw_only=True)
-class CoolifyMonitorSensorEntityDescription(SensorEntityDescription):
-    """Describes a sensor and how to read it from coordinator data."""
+class CoolifyMonitorSensorEntityDescription[ResourceT](SensorEntityDescription):
+    """Describes a sensor and how to read it from its own resource's data."""
 
-    value_fn: Callable[[CoolifyMonitorCoordinatorData], StateType]
+    value_fn: Callable[[ResourceT], StateType]
 
 
-class CoolifyMonitorSensor(SensorEntity, CoolifyMonitorEntity):
-    """Sensor backed by one value in the coordinator payload."""
+class CoolifyMonitorSensor[ResourceT](SensorEntity, CoolifyMonitorEntity):
+    """Sensor backed by one value in its own resource's data."""
 
-    entity_description: CoolifyMonitorSensorEntityDescription
+    entity_description: CoolifyMonitorSensorEntityDescription[ResourceT]
 
     @property
     def native_value(self) -> StateType:
-        """Return the value read from coordinator data."""
-        return self.entity_description.value_fn(self.coordinator.data)
+        """Return the value read from this entity's own resource."""
+        resource = self.coordinator.data[self.resource_kind][self.resource_uuid]
+        return self.entity_description.value_fn(cast(ResourceT, resource))

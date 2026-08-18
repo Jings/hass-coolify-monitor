@@ -62,6 +62,13 @@
       }
     }
   },
+  "entity": {
+    "sensor": {
+      "git_branch": {
+        "name": "Git branch"
+      }
+    }
+  },
   "exceptions": {
     "authentication_failed": {
       "message": "Authentication failed during the data update."

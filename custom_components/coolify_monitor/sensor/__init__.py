@@ -2,6 +2,9 @@
 
 from typing import TYPE_CHECKING
 
+from .application import ENTITY_DESCRIPTIONS as APPLICATION_ENTITY_DESCRIPTIONS
+from .entity import CoolifyMonitorSensor
+
 # Read-only platform: the coordinator already serializes the fetch.
 PARALLEL_UPDATES = 0
 
@@ -17,6 +20,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the sensor platform."""
-    # No sensor entities exist yet. sensor/entity.py already has the reusable
-    # pattern; real descriptions land the same way binary_sensor's did.
-    async_add_entities([])
+    coordinator = entry.runtime_data.coordinator
+    async_add_entities(
+        CoolifyMonitorSensor(coordinator, description, resource_kind="applications", resource_uuid=uuid)
+        for uuid in coordinator.data["applications"]
+        for description in APPLICATION_ENTITY_DESCRIPTIONS
+    )
