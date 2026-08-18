@@ -1,0 +1,166 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "description": "Wenn du Hilfe bei der Konfiguration benötigst, wirf einen Blick in die [Dokumentation]({documentation_url}).",
+        "data": {
+          "url": "Instanz-URL",
+          "api_token": "API-Token"
+        },
+        "data_description": {
+          "url": "Die Adresse deiner Coolify-Instanz, einschließlich des Schemas (http oder https).",
+          "api_token": "Ein Read-Only-API-Token, erstellt in Coolify unter Keys & Tokens. Es wird verschlüsselt gespeichert und niemals im Log gespeichert."
+        }
+      },
+      "reconfigure": {
+        "description": "Aktualisiere die Verbindungsdaten für diese Integration.",
+        "data": {
+          "url": "Instanz-URL",
+          "api_token": "API-Token"
+        },
+        "data_description": {
+          "url": "Die Adresse deiner Coolify-Instanz, einschließlich des Schemas (http oder https).",
+          "api_token": "Ein Read-Only-API-Token, erstellt in Coolify unter Keys & Tokens."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Integration erneut authentifizieren",
+        "description": "Das API-Token für {url} ist nicht mehr gültig. Gib ein aktualisiertes Token an, um den Zugriff wiederherzustellen.",
+        "data": {
+          "url": "Instanz-URL",
+          "api_token": "API-Token"
+        },
+        "data_description": {
+          "url": "Die Adresse deiner Coolify-Instanz, einschließlich des Schemas (http oder https).",
+          "api_token": "Das aktuelle, gültige API-Token für diese Instanz."
+        }
+      },
+      "resources": {
+        "title": "Wähle, was überwacht werden soll",
+        "description": "Gefunden: {server_count} Server, {application_count} Anwendung(en) und {database_count} Datenbank(en). Wähle aus, für welche Entitäten erstellt werden sollen.",
+        "data": {
+          "selected_servers": "Server",
+          "selected_applications": "Anwendungen",
+          "selected_databases": "Datenbanken"
+        },
+        "data_description": {
+          "selected_servers": "Die Server, für die Entitäten erstellt werden sollen.",
+          "selected_applications": "Die Anwendungen, für die Entitäten erstellt werden sollen.",
+          "selected_databases": "Die Datenbanken, für die Entitäten erstellt werden sollen."
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur Coolify-Instanz nicht möglich.",
+      "invalid_auth": "Das API-Token ist ungültig oder wurde widerrufen.",
+      "unknown": "Ein unbekannter Fehler ist aufgetreten."
+    },
+    "abort": {
+      "already_configured": "Dieser Eintrag ist bereits konfiguriert.",
+      "discovery_failed": "Die aktuellen Ressourcen konnten nicht von der Coolify-Instanz abgerufen werden.",
+      "reauth_successful": "Die erneute Authentifizierung war erfolgreich.",
+      "reconfigure_successful": "Die Neukonfiguration war erfolgreich.",
+      "unique_id_mismatch": "Diese URL und dieses Token gehören zu einer anderen Coolify-Instanz als der bereits konfigurierten."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Was möchtest du ändern?",
+        "menu_options": {
+          "update_interval": "Aktualisierungsintervall",
+          "resources": "Ressourcen"
+        }
+      },
+      "update_interval": {
+        "title": "Aktualisierungsintervall",
+        "description": "Passe an, wie oft diese Integration Coolify abfragt.",
+        "data": {
+          "update_interval_minutes": "Aktualisierungsintervall (Minuten)"
+        },
+        "data_description": {
+          "update_interval_minutes": "Wie oft Daten von Coolify abgerufen werden, zwischen 1 und 1440 Minuten (24 Stunden)."
+        }
+      },
+      "resources": {
+        "title": "Wähle, was überwacht werden soll",
+        "description": "Gefunden: {server_count} Server, {application_count} Anwendung(en) und {database_count} Datenbank(en). Wähle aus, für welche Entitäten erstellt werden sollen.",
+        "data": {
+          "selected_servers": "Server",
+          "selected_applications": "Anwendungen",
+          "selected_databases": "Datenbanken"
+        },
+        "data_description": {
+          "selected_servers": "Die Server, für die Entitäten erstellt werden sollen.",
+          "selected_applications": "Die Anwendungen, für die Entitäten erstellt werden sollen.",
+          "selected_databases": "Die Datenbanken, für die Entitäten erstellt werden sollen."
+        }
+      }
+    },
+    "abort": {
+      "discovery_failed": "Die aktuellen Ressourcen konnten nicht von der Coolify-Instanz abgerufen werden."
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "usable": {
+        "name": "Nutzbar"
+      }
+    },
+    "sensor": {
+      "git_branch": {
+        "name": "Git-Branch"
+      },
+      "name": {
+        "name": "Name"
+      },
+      "description": {
+        "name": "Beschreibung"
+      },
+      "fqdn": {
+        "name": "URL"
+      },
+      "health": {
+        "name": "Zustand"
+      },
+      "database_type": {
+        "name": "Datenbanktyp"
+      },
+      "image": {
+        "name": "Image"
+      },
+      "server_name": {
+        "name": "Server"
+      },
+      "coolify_version": {
+        "name": "Coolify-Version"
+      }
+    }
+  },
+  "exceptions": {
+    "authentication_failed": {
+      "message": "Die Authentifizierung ist bei der Datenaktualisierung fehlgeschlagen."
+    },
+    "update_failed": {
+      "message": "Die Daten konnten nicht von der Coolify-Instanz abgerufen werden."
+    },
+    "entry_not_found": {
+      "message": "Kein Konfigurationseintrag dieser Integration entspricht {target}."
+    },
+    "entry_not_loaded": {
+      "message": "Der Konfigurationseintrag {target} ist nicht geladen und kann daher nicht aktualisiert werden."
+    }
+  },
+  "services": {
+    "refresh_data": {
+      "name": "Daten aktualisieren",
+      "description": "Ruft den aktuellen Coolify-Status sofort ab, anstatt auf die nächste Abfrage zu warten.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Integrationseintrag",
+          "description": "Der zu aktualisierende Konfigurationseintrag."
+        }
+      }
+    }
+  }
+}
