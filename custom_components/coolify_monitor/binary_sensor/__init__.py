@@ -1,7 +1,10 @@
 """Binary sensor platform for coolify_monitor."""
 
+from itertools import chain
 from typing import TYPE_CHECKING
 
+from .application import ENTITY_DESCRIPTIONS as APPLICATION_ENTITY_DESCRIPTIONS
+from .database import ENTITY_DESCRIPTIONS as DATABASE_ENTITY_DESCRIPTIONS
 from .entity import CoolifyMonitorBinarySensor
 from .server import ENTITY_DESCRIPTIONS as SERVER_ENTITY_DESCRIPTIONS
 
@@ -22,7 +25,26 @@ async def async_setup_entry(
     """Set up the binary_sensor platform."""
     coordinator = entry.runtime_data.coordinator
     async_add_entities(
-        CoolifyMonitorBinarySensor(coordinator, description, resource_kind="servers", resource_uuid=server_uuid)
-        for server_uuid in coordinator.data["servers"]
-        for description in SERVER_ENTITY_DESCRIPTIONS
+        chain(
+            (
+                CoolifyMonitorBinarySensor(coordinator, description, resource_kind="servers", resource_uuid=uuid)
+                for uuid in coordinator.data["servers"]
+                for description in SERVER_ENTITY_DESCRIPTIONS
+            ),
+            (
+                CoolifyMonitorBinarySensor(
+                    coordinator,
+                    description,
+                    resource_kind="applications",
+                    resource_uuid=uuid,
+                )
+                for uuid in coordinator.data["applications"]
+                for description in APPLICATION_ENTITY_DESCRIPTIONS
+            ),
+            (
+                CoolifyMonitorBinarySensor(coordinator, description, resource_kind="databases", resource_uuid=uuid)
+                for uuid in coordinator.data["databases"]
+                for description in DATABASE_ENTITY_DESCRIPTIONS
+            ),
+        ),
     )
