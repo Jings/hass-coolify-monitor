@@ -35,4 +35,10 @@ ENTITY_DESCRIPTIONS: tuple[CoolifyMonitorSensorEntityDescription[CoolifyMonitorA
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda application: application["health"],
     ),
+    CoolifyMonitorSensorEntityDescription(
+        key="server_name",
+        translation_key="server_name",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda application: application["server_name"],
+    ),
 )

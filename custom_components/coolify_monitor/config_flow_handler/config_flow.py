@@ -5,14 +5,23 @@ from typing import Any
 from custom_components.coolify_monitor.api import (
     CoolifyMonitorApiClientAuthenticationError,
     CoolifyMonitorApiClientCommunicationError,
+    CoolifyMonitorApiClientError,
 )
-from custom_components.coolify_monitor.const import DOMAIN, LOGGER
+from custom_components.coolify_monitor.const import CONF_SELECTED_RESOURCES, DOMAIN, LOGGER
+from custom_components.coolify_monitor.coordinator import CoolifyMonitorCoordinatorData
 from homeassistant import config_entries
 from homeassistant.const import CONF_API_TOKEN, CONF_URL
 from homeassistant.loader import async_get_loaded_integration
 
+from .handler import async_discover_resources
 from .options_flow import CoolifyMonitorOptionsFlow
-from .schemas import get_reauth_schema, get_reconfigure_schema, get_user_schema
+from .schemas import (
+    build_selected_resources,
+    get_reauth_schema,
+    get_reconfigure_schema,
+    get_resources_schema,
+    get_user_schema,
+)
 from .validators import validate_connection
 
 
@@ -20,6 +29,9 @@ class CoolifyMonitorConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle the config flow for coolify_monitor."""
 
     VERSION = 1
+
+    _connection_data: dict[str, Any]
+    _discovered: CoolifyMonitorCoordinatorData
 
     @staticmethod
     def async_get_options_flow(
@@ -53,10 +65,8 @@ class CoolifyMonitorConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 await self.async_set_unique_id(unique_id)
                 self._abort_if_unique_id_configured()
 
-                return self.async_create_entry(
-                    title=user_input[CONF_URL],
-                    data=user_input,
-                )
+                self._connection_data = user_input
+                return await self.async_step_resources()
 
         integration = async_get_loaded_integration(self.hass, DOMAIN)
 
@@ -66,6 +76,46 @@ class CoolifyMonitorConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={
                 "documentation_url": integration.documentation or "",
+            },
+        )
+
+    async def async_step_resources(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """
+        Show the auto-discovered resources and let the user choose which to monitor.
+
+        Returns:
+            The created config entry, or the abort that follows a failed discovery.
+
+        """
+        if user_input is not None:
+            return self.async_create_entry(
+                title=self._connection_data[CONF_URL],
+                data=self._connection_data,
+                options={CONF_SELECTED_RESOURCES: build_selected_resources(user_input)},
+            )
+
+        try:
+            self._discovered = await async_discover_resources(
+                self.hass,
+                url=self._connection_data[CONF_URL],
+                api_token=self._connection_data[CONF_API_TOKEN],
+            )
+        except CoolifyMonitorApiClientError:
+            return self.async_abort(reason="discovery_failed")
+        except Exception:  # noqa: BLE001 - Anything unexpected still has to abort cleanly.
+            LOGGER.exception("Unexpected exception")
+            return self.async_abort(reason="discovery_failed")
+
+        return self.async_show_form(
+            step_id="resources",
+            data_schema=get_resources_schema(self._discovered),
+            description_placeholders={
+                "server_count": str(len(self._discovered["servers"])),
+                "application_count": str(len(self._discovered["applications"])),
+                "database_count": str(len(self._discovered["databases"])),
             },
         )
 

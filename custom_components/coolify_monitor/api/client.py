@@ -2,7 +2,7 @@
 
 import asyncio
 import socket
-from typing import Any
+from typing import Any, Literal
 
 import aiohttp
 
@@ -85,12 +85,28 @@ class CoolifyMonitorApiClient:
         """
         return await self._api_wrapper("get", "/databases")
 
-    async def _api_wrapper(self, method: str, path: str) -> Any:
+    async def async_get_version(self) -> str:
+        """
+        Fetch the Coolify instance's own version.
+
+        Returns:
+            The raw version string (e.g. "4.0.0-beta.442"). Unlike every other
+            endpoint, Coolify returns this as plain text rather than JSON.
+
+        """
+        return await self._api_wrapper("get", "/version", decode="text")
+
+    async def _api_wrapper(
+        self,
+        method: str,
+        path: str,
+        decode: Literal["json", "text"] = "json",
+    ) -> Any:
         """
         Perform a request and translate transport errors into client exceptions.
 
         Returns:
-            The decoded JSON response.
+            The decoded JSON response, or the raw text when `decode="text"`.
 
         Raises:
             CoolifyMonitorApiClientAuthenticationError: If the token is rejected.
@@ -106,6 +122,8 @@ class CoolifyMonitorApiClient:
                     headers={"Authorization": f"Bearer {self._api_token}"},
                 )
                 _verify_response_or_raise(response)
+                if decode == "text":
+                    return (await response.text()).strip()
                 return await response.json()
 
         except TimeoutError as exception:

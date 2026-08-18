@@ -47,3 +47,14 @@ async def test_health_reflects_database_status(
 
     assert state is not None
     assert state.state == "healthy"
+
+
+async def test_server_name_of_database(
+    init_integration: MockConfigEntry,
+    hass: HomeAssistant,
+) -> None:
+    """The sensor shows the name of the server the database runs on."""
+    state = hass.states.get("sensor.demo_db_server")
+
+    assert state is not None
+    assert state.state == "localhost"

@@ -50,10 +50,13 @@ DATABASES_RESPONSE: list[dict[str, Any]] = [
     },
 ]
 
-_RESPONSES_BY_PATH = {
+VERSION_RESPONSE = "4.0.0-beta.442"
+
+_RESPONSES_BY_PATH: dict[str, Any] = {
     "/servers": SERVERS_RESPONSE,
     "/applications": APPLICATIONS_RESPONSE,
     "/databases": DATABASES_RESPONSE,
+    "/version": VERSION_RESPONSE,
 }
 
 
@@ -66,7 +69,7 @@ def auto_enable_custom_integrations(enable_custom_integrations: None) -> None:
 def mock_api() -> Generator[AsyncMock]:
     """Replace the client's HTTP layer, returning canned resource lists."""
 
-    async def _respond(method: str, path: str) -> Any:
+    async def _respond(method: str, path: str, decode: str = "json") -> Any:
         return _RESPONSES_BY_PATH[path]
 
     with patch(

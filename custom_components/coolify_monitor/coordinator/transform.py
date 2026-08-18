@@ -6,6 +6,7 @@ from .models import (
     CoolifyMonitorApplicationData,
     CoolifyMonitorCoordinatorData,
     CoolifyMonitorDatabaseData,
+    CoolifyMonitorSelectedResources,
     CoolifyMonitorServerData,
 )
 
@@ -23,9 +24,13 @@ def _split_status(status: str) -> tuple[str, str]:
     return state, health
 
 
-def _build_server(raw: dict[str, Any]) -> CoolifyMonitorServerData:
+def _build_server(raw: dict[str, Any], version: str | None) -> CoolifyMonitorServerData:
     """
     Build a server entry from its raw API representation.
+
+    Args:
+        raw: The server's raw API representation.
+        version: The Coolify instance's version, attached only to the host server.
 
     Returns:
         The server data the coordinator hands to entities.
@@ -38,6 +43,7 @@ def _build_server(raw: dict[str, Any]) -> CoolifyMonitorServerData:
         is_reachable=raw["is_reachable"],
         is_usable=raw["is_usable"],
         is_coolify_host=raw["is_coolify_host"],
+        coolify_version=version if raw["is_coolify_host"] else None,
     )
 
 
@@ -92,16 +98,41 @@ def build_coordinator_data(
     servers: list[dict[str, Any]],
     applications: list[dict[str, Any]],
     databases: list[dict[str, Any]],
+    version: str | None = None,
 ) -> CoolifyMonitorCoordinatorData:
     """
-    Combine the three raw API responses into the coordinator's data shape.
+    Combine the raw API responses into the coordinator's data shape.
+
+    Args:
+        servers: The raw server list.
+        applications: The raw application list.
+        databases: The raw database list.
+        version: The Coolify instance's version, or None when it was not fetched.
 
     Returns:
         Every resource, grouped by kind and keyed by UUID.
 
     """
     return CoolifyMonitorCoordinatorData(
-        servers={server["uuid"]: _build_server(server) for server in servers},
+        servers={server["uuid"]: _build_server(server, version) for server in servers},
         applications={app["uuid"]: _build_application(app) for app in applications},
         databases={db["uuid"]: _build_database(db) for db in databases},
+    )
+
+
+def filter_to_selected(
+    data: CoolifyMonitorCoordinatorData,
+    selected: CoolifyMonitorSelectedResources,
+) -> CoolifyMonitorCoordinatorData:
+    """
+    Narrow the coordinator's data down to only the resources the user chose to monitor.
+
+    Returns:
+        Every resource kind, keeping only the UUIDs present in `selected`.
+
+    """
+    return CoolifyMonitorCoordinatorData(
+        servers={uuid: r for uuid, r in data["servers"].items() if uuid in selected["servers"]},
+        applications={uuid: r for uuid, r in data["applications"].items() if uuid in selected["applications"]},
+        databases={uuid: r for uuid, r in data["databases"].items() if uuid in selected["databases"]},
     )

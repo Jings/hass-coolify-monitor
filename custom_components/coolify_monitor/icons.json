@@ -18,7 +18,9 @@
       "description": { "default": "mdi:text-box-outline" },
       "fqdn": { "default": "mdi:web" },
       "database_type": { "default": "mdi:database-cog" },
-      "image": { "default": "mdi:docker" }
+      "image": { "default": "mdi:docker" },
+      "server_name": { "default": "mdi:server" },
+      "coolify_version": { "default": "mdi:tag" }
     }
   }
 }

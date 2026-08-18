@@ -1,23 +1,45 @@
 """Base entity class for coolify_monitor."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from custom_components.coolify_monitor.const import ATTRIBUTION
 from custom_components.coolify_monitor.coordinator import (
     CoolifyMonitorDataUpdateCoordinator,
     CoolifyMonitorResourceKind,
 )
-from homeassistant.helpers.device_registry import DeviceInfo
+from custom_components.coolify_monitor.coordinator.models import (
+    CoolifyMonitorApplicationData,
+    CoolifyMonitorDatabaseData,
+)
+from custom_components.coolify_monitor.entity_utils import build_device_info
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity import EntityDescription
 
-_DEVICE_MODEL_BY_KIND: dict[CoolifyMonitorResourceKind, str] = {
-    "servers": "Server",
-    "applications": "Application",
-    "databases": "Database",
-}
+
+def _find_server_device_id(
+    coordinator: CoolifyMonitorDataUpdateCoordinator,
+    resource_kind: CoolifyMonitorResourceKind,
+    resource: object,
+) -> str | None:
+    """
+    Look up the registry ID of the server an application or database runs on.
+
+    Returns:
+        The server device's registry ID, or None for a server itself.
+
+    """
+    if resource_kind == "servers":
+        return None
+
+    resource = cast("CoolifyMonitorApplicationData | CoolifyMonitorDatabaseData", resource)
+    device = dr.async_get(coordinator.hass).async_get_device_by_identifier(
+        identifier=(coordinator.config_entry.domain, resource["server_uuid"]),
+        config_entry_id=coordinator.config_entry.entry_id,
+    )
+    return device.id if device else None
 
 
 class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator]):
@@ -26,6 +48,7 @@ class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator
 
     Every entity belongs to exactly one resource (a server, application or database) and
     is grouped under that resource's own device, rather than one device per config entry.
+    An application or database device links back to its server via `via_device_id`.
     """
 
     _attr_attribution = ATTRIBUTION
@@ -46,9 +69,10 @@ class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator
         self._attr_unique_id = f"{resource_uuid}_{entity_description.key}"
 
         resource = coordinator.data[resource_kind][resource_uuid]
-        self._attr_device_info = DeviceInfo(
-            identifiers={(coordinator.config_entry.domain, resource_uuid)},
+        self._attr_device_info = build_device_info(
+            coordinator.config_entry.domain,
+            resource_kind,
+            resource_uuid,
             name=resource["name"],
-            manufacturer="Coolify",
-            model=_DEVICE_MODEL_BY_KIND[resource_kind],
+            via_device_id=_find_server_device_id(coordinator, resource_kind, resource),
         )

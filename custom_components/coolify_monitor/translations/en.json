@@ -34,6 +34,20 @@
           "url": "The address of your Coolify instance, including the scheme (http or https).",
           "api_token": "The current, valid API token for that instance."
         }
+      },
+      "resources": {
+        "title": "Choose what to monitor",
+        "description": "Found {server_count} server(s), {application_count} application(s) and {database_count} database(s). Choose which ones to create entities for.",
+        "data": {
+          "selected_servers": "Servers",
+          "selected_applications": "Applications",
+          "selected_databases": "Databases"
+        },
+        "data_description": {
+          "selected_servers": "The servers to create entities for.",
+          "selected_applications": "The applications to create entities for.",
+          "selected_databases": "The databases to create entities for."
+        }
       }
     },
     "error": {
@@ -43,6 +57,7 @@
     },
     "abort": {
       "already_configured": "This entry is already configured.",
+      "discovery_failed": "Could not fetch the current resources from the Coolify instance.",
       "reauth_successful": "Reauthentication was successful.",
       "reconfigure_successful": "Reconfiguration was successful.",
       "unique_id_mismatch": "This URL and token belong to a different Coolify instance than the one already configured."
@@ -51,15 +66,39 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configure integration options",
-        "description": "Customize how this integration operates.",
+        "title": "What would you like to change?",
+        "menu_options": {
+          "update_interval": "Update interval",
+          "resources": "Resources"
+        }
+      },
+      "update_interval": {
+        "title": "Update interval",
+        "description": "Customize how often this integration polls Coolify.",
         "data": {
-          "update_interval_hours": "Update interval (hours)"
+          "update_interval_minutes": "Update interval (minutes)"
         },
         "data_description": {
-          "update_interval_hours": "How often to fetch data from Coolify, between 0.25 and 24 hours."
+          "update_interval_minutes": "How often to fetch data from Coolify, between 1 and 1440 minutes (24 hours)."
+        }
+      },
+      "resources": {
+        "title": "Choose what to monitor",
+        "description": "Found {server_count} server(s), {application_count} application(s) and {database_count} database(s). Choose which ones to create entities for.",
+        "data": {
+          "selected_servers": "Servers",
+          "selected_applications": "Applications",
+          "selected_databases": "Databases"
+        },
+        "data_description": {
+          "selected_servers": "The servers to create entities for.",
+          "selected_applications": "The applications to create entities for.",
+          "selected_databases": "The databases to create entities for."
         }
       }
+    },
+    "abort": {
+      "discovery_failed": "Could not fetch the current resources from the Coolify instance."
     }
   },
   "entity": {
@@ -89,6 +128,12 @@
       },
       "image": {
         "name": "Image"
+      },
+      "server_name": {
+        "name": "Server"
+      },
+      "coolify_version": {
+        "name": "Coolify version"
       }
     }
   },

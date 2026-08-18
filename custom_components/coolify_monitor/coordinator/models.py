@@ -14,6 +14,7 @@ class CoolifyMonitorServerData(TypedDict):
     is_reachable: bool
     is_usable: bool
     is_coolify_host: bool
+    coolify_version: str | None
 
 
 class CoolifyMonitorApplicationData(TypedDict):
@@ -51,3 +52,11 @@ class CoolifyMonitorCoordinatorData(TypedDict):
     servers: dict[str, CoolifyMonitorServerData]
     applications: dict[str, CoolifyMonitorApplicationData]
     databases: dict[str, CoolifyMonitorDatabaseData]
+
+
+class CoolifyMonitorSelectedResources(TypedDict):
+    """Which discovered UUIDs the user chose to monitor, grouped by kind."""
+
+    servers: list[str]
+    applications: list[str]
+    databases: list[str]

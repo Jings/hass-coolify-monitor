@@ -9,14 +9,16 @@ from datetime import timedelta
 from typing import TYPE_CHECKING
 
 from homeassistant.const import CONF_API_TOKEN, CONF_URL, Platform
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import homeassistant.helpers.config_validation as cv
 from homeassistant.loader import async_get_loaded_integration
 
 from .api import CoolifyMonitorApiClient
-from .const import CONF_UPDATE_INTERVAL_HOURS, DEFAULT_UPDATE_INTERVAL_HOURS, DOMAIN, LOGGER
+from .const import CONF_UPDATE_INTERVAL_MINUTES, DEFAULT_UPDATE_INTERVAL_MINUTES, DOMAIN, LOGGER
 from .coordinator import CoolifyMonitorDataUpdateCoordinator
 from .data import CoolifyMonitorData
+from .entity_utils import build_device_info
 from .service_actions import async_setup_services
 
 if TYPE_CHECKING:
@@ -61,13 +63,13 @@ async def async_setup_entry(
         session=async_get_clientsession(hass),
     )
 
-    interval_hours = float(entry.options.get(CONF_UPDATE_INTERVAL_HOURS, DEFAULT_UPDATE_INTERVAL_HOURS))
+    interval_minutes = int(entry.options.get(CONF_UPDATE_INTERVAL_MINUTES, DEFAULT_UPDATE_INTERVAL_MINUTES))
     coordinator = CoolifyMonitorDataUpdateCoordinator(
         hass=hass,
         logger=LOGGER,
         name=DOMAIN,
         config_entry=entry,
-        update_interval=timedelta(hours=interval_hours),
+        update_interval=timedelta(minutes=interval_minutes),
         always_update=False,
     )
 
@@ -78,6 +80,13 @@ async def async_setup_entry(
     )
 
     await coordinator.async_config_entry_first_refresh()
+
+    device_registry = dr.async_get(hass)
+    for server_uuid, server in coordinator.data["servers"].items():
+        device_registry.async_get_or_create(
+            config_entry_id=entry.entry_id,
+            **build_device_info(entry.domain, "servers", server_uuid, name=server["name"]),
+        )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
