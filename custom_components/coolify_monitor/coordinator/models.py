@@ -1,6 +1,8 @@
 """Typed shapes for the data the coordinator hands to entities."""
 
-from typing import TypedDict
+from typing import Literal, TypedDict
+
+CoolifyMonitorResourceKind = Literal["servers", "applications", "databases"]
 
 
 class CoolifyMonitorServerData(TypedDict):

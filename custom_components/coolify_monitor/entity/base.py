@@ -3,26 +3,29 @@
 from typing import TYPE_CHECKING
 
 from custom_components.coolify_monitor.const import ATTRIBUTION
-from custom_components.coolify_monitor.coordinator import CoolifyMonitorDataUpdateCoordinator
+from custom_components.coolify_monitor.coordinator import (
+    CoolifyMonitorDataUpdateCoordinator,
+    CoolifyMonitorResourceKind,
+)
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 if TYPE_CHECKING:
     from homeassistant.helpers.entity import EntityDescription
 
+_DEVICE_MODEL_BY_KIND: dict[CoolifyMonitorResourceKind, str] = {
+    "servers": "Server",
+    "applications": "Application",
+    "databases": "Database",
+}
+
 
 class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator]):
     """
-    Base entity providing device info, unique ID and attribution.
+    Base entity for one Coolify resource, providing device info, unique ID and attribution.
 
-    The unique ID is `{entry_id}_{key}`, the documented identifier of last resort.
-    A real integration switches to the device's serial, MAC or account ID before its
-    first release, because changing it afterwards needs a registry migration.
-
-    Every entity is grouped under one placeholder device for the whole config entry.
-    This is temporary: once real sensor/binary_sensor entities exist, each Coolify
-    resource (server, application, database) becomes its own device, and this class
-    is rebuilt to take a resource kind and UUID instead of assuming a single device.
+    Every entity belongs to exactly one resource (a server, application or database) and
+    is grouped under that resource's own device, rather than one device per config entry.
     """
 
     _attr_attribution = ATTRIBUTION
@@ -32,18 +35,20 @@ class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator
         self,
         coordinator: CoolifyMonitorDataUpdateCoordinator,
         entity_description: EntityDescription,
+        resource_kind: CoolifyMonitorResourceKind,
+        resource_uuid: str,
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator)
         self.entity_description = entity_description
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_description.key}"
+        self.resource_kind = resource_kind
+        self.resource_uuid = resource_uuid
+        self._attr_unique_id = f"{resource_uuid}_{entity_description.key}"
+
+        resource = coordinator.data[resource_kind][resource_uuid]
         self._attr_device_info = DeviceInfo(
-            identifiers={
-                (
-                    coordinator.config_entry.domain,
-                    coordinator.config_entry.entry_id,
-                ),
-            },
-            name=coordinator.config_entry.title,
+            identifiers={(coordinator.config_entry.domain, resource_uuid)},
+            name=resource["name"],
             manufacturer="Coolify",
+            model=_DEVICE_MODEL_BY_KIND[resource_kind],
         )
