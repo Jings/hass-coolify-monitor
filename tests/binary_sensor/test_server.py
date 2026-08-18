@@ -15,3 +15,14 @@ async def test_reachable_reflects_server_status(
 
     assert state is not None
     assert state.state == STATE_ON
+
+
+async def test_usable_reflects_server_status(
+    init_integration: MockConfigEntry,
+    hass: HomeAssistant,
+) -> None:
+    """The usable sensor is on when the server reports itself usable."""
+    state = hass.states.get("binary_sensor.localhost_usable")
+
+    assert state is not None
+    assert state.state == STATE_ON

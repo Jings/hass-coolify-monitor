@@ -12,4 +12,27 @@ ENTITY_DESCRIPTIONS: tuple[CoolifyMonitorSensorEntityDescription[CoolifyMonitorA
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda application: application["git_branch"],
     ),
+    CoolifyMonitorSensorEntityDescription(
+        key="name",
+        translation_key="name",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda application: application["name"],
+    ),
+    CoolifyMonitorSensorEntityDescription(
+        key="description",
+        translation_key="description",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda application: application["description"],
+    ),
+    CoolifyMonitorSensorEntityDescription(
+        key="fqdn",
+        translation_key="fqdn",
+        value_fn=lambda application: application["fqdn"],
+    ),
+    CoolifyMonitorSensorEntityDescription(
+        key="health",
+        translation_key="health",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda application: application["health"],
+    ),
 )

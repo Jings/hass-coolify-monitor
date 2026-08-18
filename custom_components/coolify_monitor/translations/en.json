@@ -63,9 +63,32 @@
     }
   },
   "entity": {
+    "binary_sensor": {
+      "usable": {
+        "name": "Usable"
+      }
+    },
     "sensor": {
       "git_branch": {
         "name": "Git branch"
+      },
+      "name": {
+        "name": "Name"
+      },
+      "description": {
+        "name": "Description"
+      },
+      "fqdn": {
+        "name": "URL"
+      },
+      "health": {
+        "name": "Health"
+      },
+      "database_type": {
+        "name": "Database type"
+      },
+      "image": {
+        "name": "Image"
       }
     }
   },
