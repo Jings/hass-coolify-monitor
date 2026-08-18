@@ -3,5 +3,22 @@
     "refresh_data": {
       "service": "mdi:refresh"
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "usable": { "default": "mdi:check-decagram" }
+    },
+    "sensor": {
+      "health": {
+        "default": "mdi:heart-pulse",
+        "state": { "unhealthy": "mdi:heart-broken" }
+      },
+      "git_branch": { "default": "mdi:git" },
+      "name": { "default": "mdi:tag-text-outline" },
+      "description": { "default": "mdi:text-box-outline" },
+      "fqdn": { "default": "mdi:web" },
+      "database_type": { "default": "mdi:database-cog" },
+      "image": { "default": "mdi:docker" }
+    }
   }
 }
