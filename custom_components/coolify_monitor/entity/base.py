@@ -10,6 +10,7 @@ from custom_components.coolify_monitor.coordinator import (
 from custom_components.coolify_monitor.coordinator.models import (
     CoolifyMonitorApplicationData,
     CoolifyMonitorDatabaseData,
+    CoolifyMonitorServiceData,
 )
 from custom_components.coolify_monitor.entity_utils import build_device_info
 from homeassistant.helpers import device_registry as dr
@@ -25,16 +26,16 @@ def _find_server_device_id(
     resource: object,
 ) -> str | None:
     """
-    Look up the registry ID of the server an application or database runs on.
+    Look up the registry ID of the server an application, database or service runs on.
 
     Returns:
-        The server device's registry ID, or None for a server itself.
+        The server device's registry ID, or None for a resource with no server of its own.
 
     """
-    if resource_kind == "servers":
+    if resource_kind in ("servers", "teams"):
         return None
 
-    resource = cast("CoolifyMonitorApplicationData | CoolifyMonitorDatabaseData", resource)
+    resource = cast("CoolifyMonitorApplicationData | CoolifyMonitorDatabaseData | CoolifyMonitorServiceData", resource)
     device = dr.async_get(coordinator.hass).async_get_device_by_identifier(
         identifier=(coordinator.config_entry.domain, resource["server_uuid"]),
         config_entry_id=coordinator.config_entry.entry_id,
@@ -46,9 +47,10 @@ class CoolifyMonitorEntity(CoordinatorEntity[CoolifyMonitorDataUpdateCoordinator
     """
     Base entity for one Coolify resource, providing device info, unique ID and attribution.
 
-    Every entity belongs to exactly one resource (a server, application or database) and
-    is grouped under that resource's own device, rather than one device per config entry.
-    An application or database device links back to its server via `via_device_id`.
+    Every entity belongs to exactly one resource (a server, application, database, team or
+    service) and is grouped under that resource's own device, rather than one device per
+    config entry. An application, database or service device links back to its server via
+    `via_device_id`.
     """
 
     _attr_attribution = ATTRIBUTION

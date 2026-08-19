@@ -7,6 +7,8 @@ from .application import ENTITY_DESCRIPTIONS as APPLICATION_ENTITY_DESCRIPTIONS
 from .database import ENTITY_DESCRIPTIONS as DATABASE_ENTITY_DESCRIPTIONS
 from .entity import CoolifyMonitorBinarySensor
 from .server import ENTITY_DESCRIPTIONS as SERVER_ENTITY_DESCRIPTIONS
+from .service import ENTITY_DESCRIPTIONS as SERVICE_ENTITY_DESCRIPTIONS
+from .team import ENTITY_DESCRIPTIONS as TEAM_ENTITY_DESCRIPTIONS
 
 # Read-only platform: the coordinator already serializes the fetch.
 PARALLEL_UPDATES = 0
@@ -45,6 +47,16 @@ async def async_setup_entry(
                 CoolifyMonitorBinarySensor(coordinator, description, resource_kind="databases", resource_uuid=uuid)
                 for uuid in coordinator.data["databases"]
                 for description in DATABASE_ENTITY_DESCRIPTIONS
+            ),
+            (
+                CoolifyMonitorBinarySensor(coordinator, description, resource_kind="teams", resource_uuid=uuid)
+                for uuid in coordinator.data["teams"]
+                for description in TEAM_ENTITY_DESCRIPTIONS
+            ),
+            (
+                CoolifyMonitorBinarySensor(coordinator, description, resource_kind="services", resource_uuid=uuid)
+                for uuid in coordinator.data["services"]
+                for description in SERVICE_ENTITY_DESCRIPTIONS
             ),
         ),
     )

@@ -1,8 +1,9 @@
 """Typed shapes for the data the coordinator hands to entities."""
 
+from datetime import datetime
 from typing import Literal, TypedDict
 
-CoolifyMonitorResourceKind = Literal["servers", "applications", "databases"]
+CoolifyMonitorResourceKind = Literal["servers", "applications", "databases", "teams", "services"]
 
 
 class CoolifyMonitorServerData(TypedDict):
@@ -46,12 +47,37 @@ class CoolifyMonitorDatabaseData(TypedDict):
     server_name: str
 
 
+class CoolifyMonitorTeamData(TypedDict):
+    """One Coolify team, as the coordinator exposes it to entities."""
+
+    id: str
+    name: str
+    description: str | None
+    personal_team: bool
+    created_at: datetime | None
+
+
+class CoolifyMonitorServiceData(TypedDict):
+    """One Coolify service, as the coordinator exposes it to entities."""
+
+    uuid: str
+    name: str
+    description: str | None
+    state: str
+    health: str
+    service_type: str
+    server_uuid: str
+    server_name: str
+
+
 class CoolifyMonitorCoordinatorData(TypedDict):
     """Every Coolify resource the coordinator has fetched, grouped by kind and keyed by UUID."""
 
     servers: dict[str, CoolifyMonitorServerData]
     applications: dict[str, CoolifyMonitorApplicationData]
     databases: dict[str, CoolifyMonitorDatabaseData]
+    teams: dict[str, CoolifyMonitorTeamData]
+    services: dict[str, CoolifyMonitorServiceData]
 
 
 class CoolifyMonitorSelectedResources(TypedDict):
@@ -60,3 +86,5 @@ class CoolifyMonitorSelectedResources(TypedDict):
     servers: list[str]
     applications: list[str]
     databases: list[str]
+    teams: list[str]
+    services: list[str]

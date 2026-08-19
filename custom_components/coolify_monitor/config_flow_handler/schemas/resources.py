@@ -12,6 +12,8 @@ from homeassistant.helpers import selector
 FIELD_SELECTED_SERVERS = "selected_servers"
 FIELD_SELECTED_APPLICATIONS = "selected_applications"
 FIELD_SELECTED_DATABASES = "selected_databases"
+FIELD_SELECTED_TEAMS = "selected_teams"
+FIELD_SELECTED_SERVICES = "selected_services"
 
 
 def _options_for(resources: Mapping[str, Any]) -> list[selector.SelectOptionDict]:
@@ -90,6 +92,26 @@ def get_resources_schema(
                     mode=selector.SelectSelectorMode.LIST,
                 ),
             ),
+            vol.Optional(
+                FIELD_SELECTED_TEAMS,
+                default=_default_for(discovered["teams"], selected["teams"] if selected else None),
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=_options_for(discovered["teams"]),
+                    multiple=True,
+                    mode=selector.SelectSelectorMode.LIST,
+                ),
+            ),
+            vol.Optional(
+                FIELD_SELECTED_SERVICES,
+                default=_default_for(discovered["services"], selected["services"] if selected else None),
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=_options_for(discovered["services"]),
+                    multiple=True,
+                    mode=selector.SelectSelectorMode.LIST,
+                ),
+            ),
         },
     )
 
@@ -106,6 +128,8 @@ def build_selected_resources(user_input: Mapping[str, Any]) -> CoolifyMonitorSel
         servers=user_input[FIELD_SELECTED_SERVERS],
         applications=user_input[FIELD_SELECTED_APPLICATIONS],
         databases=user_input[FIELD_SELECTED_DATABASES],
+        teams=user_input[FIELD_SELECTED_TEAMS],
+        services=user_input[FIELD_SELECTED_SERVICES],
     )
 
 

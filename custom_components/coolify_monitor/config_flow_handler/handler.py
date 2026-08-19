@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 async def async_discover_resources(hass: HomeAssistant, url: str, api_token: str) -> CoolifyMonitorCoordinatorData:
     """
-    Fetch every server, application and database from the Coolify instance.
+    Fetch every server, application, database, team and service from the Coolify instance.
 
     Returns:
         Every resource, grouped by kind and keyed by UUID.
@@ -29,12 +29,14 @@ async def async_discover_resources(hass: HomeAssistant, url: str, api_token: str
         api_token=api_token,
         session=async_get_clientsession(hass),
     )
-    servers, applications, databases = await asyncio.gather(
+    servers, applications, databases, teams, services = await asyncio.gather(
         client.async_get_servers(),
         client.async_get_applications(),
         client.async_get_databases(),
+        client.async_get_teams(),
+        client.async_get_services(),
     )
-    return build_coordinator_data(servers, applications, databases)
+    return build_coordinator_data(servers, applications, databases, teams, services)
 
 
 __all__ = ["async_discover_resources"]

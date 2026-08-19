@@ -94,6 +94,8 @@ class CoolifyMonitorOptionsFlow(config_entries.OptionsFlow):
                 "server_count": str(len(discovered["servers"])),
                 "application_count": str(len(discovered["applications"])),
                 "database_count": str(len(discovered["databases"])),
+                "team_count": str(len(discovered["teams"])),
+                "service_count": str(len(discovered["services"])),
             },
         )
 

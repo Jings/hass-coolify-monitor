@@ -7,6 +7,8 @@ _DEVICE_MODEL_BY_KIND: dict[CoolifyMonitorResourceKind, str] = {
     "servers": "Server",
     "applications": "Application",
     "databases": "Database",
+    "teams": "Team",
+    "services": "Service",
 }
 
 

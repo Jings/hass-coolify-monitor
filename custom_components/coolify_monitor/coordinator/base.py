@@ -47,7 +47,7 @@ class CoolifyMonitorDataUpdateCoordinator(DataUpdateCoordinator[CoolifyMonitorCo
 
     async def _async_update_data(self) -> CoolifyMonitorCoordinatorData:
         """
-        Fetch servers, applications and databases from the Coolify API.
+        Fetch servers, applications, databases, teams and services from the Coolify API.
 
         Returns:
             Every selected resource, grouped by kind and keyed by UUID.
@@ -62,10 +62,12 @@ class CoolifyMonitorDataUpdateCoordinator(DataUpdateCoordinator[CoolifyMonitorCo
         fetch_servers = selected is None or selected["servers"]
 
         try:
-            servers, applications, databases, version = await asyncio.gather(
+            servers, applications, databases, teams, services, version = await asyncio.gather(
                 client.async_get_servers() if fetch_servers else _empty_list(),
                 client.async_get_applications() if selected is None or selected["applications"] else _empty_list(),
                 client.async_get_databases() if selected is None or selected["databases"] else _empty_list(),
+                client.async_get_teams() if selected is None or selected["teams"] else _empty_list(),
+                client.async_get_services() if selected is None or selected["services"] else _empty_list(),
                 client.async_get_version() if fetch_servers else _no_version(),
             )
         except CoolifyMonitorApiClientAuthenticationError as exception:
@@ -79,7 +81,7 @@ class CoolifyMonitorDataUpdateCoordinator(DataUpdateCoordinator[CoolifyMonitorCo
                 translation_key="update_failed",
             ) from exception
 
-        data = build_coordinator_data(servers, applications, databases, version)
+        data = build_coordinator_data(servers, applications, databases, teams, services, version)
         if selected is not None:
             data = filter_to_selected(data, selected)
         return data

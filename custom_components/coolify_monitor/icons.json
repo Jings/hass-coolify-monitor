@@ -6,7 +6,11 @@
   },
   "entity": {
     "binary_sensor": {
-      "usable": { "default": "mdi:check-decagram" }
+      "usable": { "default": "mdi:check-decagram" },
+      "personal_team": {
+        "default": "mdi:account-group",
+        "state": { "on": "mdi:account" }
+      }
     },
     "sensor": {
       "health": {
@@ -18,6 +22,7 @@
       "description": { "default": "mdi:text-box-outline" },
       "fqdn": { "default": "mdi:web" },
       "database_type": { "default": "mdi:database-cog" },
+      "service_type": { "default": "mdi:puzzle" },
       "image": { "default": "mdi:docker" },
       "server_name": { "default": "mdi:server" },
       "coolify_version": { "default": "mdi:tag" }

@@ -85,6 +85,26 @@ class CoolifyMonitorApiClient:
         """
         return await self._api_wrapper("get", "/databases")
 
+    async def async_get_services(self) -> list[dict[str, Any]]:
+        """
+        Fetch every service known to this Coolify instance.
+
+        Returns:
+            The raw service list, exactly as Coolify returns it.
+
+        """
+        return await self._api_wrapper("get", "/services")
+
+    async def async_get_teams(self) -> list[dict[str, Any]]:
+        """
+        Fetch every team known to this Coolify instance.
+
+        Returns:
+            The raw team list, exactly as Coolify returns it.
+
+        """
+        return await self._api_wrapper("get", "/teams")
+
     async def async_get_version(self) -> str:
         """
         Fetch the Coolify instance's own version.

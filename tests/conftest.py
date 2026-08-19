@@ -50,12 +50,37 @@ DATABASES_RESPONSE: list[dict[str, Any]] = [
     },
 ]
 
+SERVICES_RESPONSE: list[dict[str, Any]] = [
+    {
+        "uuid": "demo-service-uuid",
+        "name": "demo-service",
+        "description": "Demo service",
+        "status": "running:healthy",
+        "service_type": "it-tools",
+        "server": _HOST_SERVER_REF,
+    },
+]
+
+TEAMS_RESPONSE: list[dict[str, Any]] = [
+    {
+        "id": 0,
+        "name": "Root Team",
+        "description": None,
+        "personal_team": True,
+        "show_boarding": False,
+        "created_at": "2025-09-03T18:18:38.000000Z",
+        "updated_at": "2025-09-03T18:19:01.000000Z",
+    },
+]
+
 VERSION_RESPONSE = "4.0.0-beta.442"
 
 _RESPONSES_BY_PATH: dict[str, Any] = {
     "/servers": SERVERS_RESPONSE,
     "/applications": APPLICATIONS_RESPONSE,
     "/databases": DATABASES_RESPONSE,
+    "/teams": TEAMS_RESPONSE,
+    "/services": SERVICES_RESPONSE,
     "/version": VERSION_RESPONSE,
 }
 

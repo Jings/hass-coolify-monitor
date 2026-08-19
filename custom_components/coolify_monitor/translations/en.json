@@ -37,16 +37,20 @@
       },
       "resources": {
         "title": "Choose what to monitor",
-        "description": "Found {server_count} server(s), {application_count} application(s) and {database_count} database(s). Choose which ones to create entities for.",
+        "description": "Found {server_count} server(s), {application_count} application(s), {database_count} database(s), {team_count} team(s) and {service_count} service(s). Choose which ones to create entities for.",
         "data": {
           "selected_servers": "Servers",
           "selected_applications": "Applications",
-          "selected_databases": "Databases"
+          "selected_databases": "Databases",
+          "selected_teams": "Teams",
+          "selected_services": "Services"
         },
         "data_description": {
           "selected_servers": "The servers to create entities for.",
           "selected_applications": "The applications to create entities for.",
-          "selected_databases": "The databases to create entities for."
+          "selected_databases": "The databases to create entities for.",
+          "selected_teams": "The teams to create entities for.",
+          "selected_services": "The services to create entities for."
         }
       }
     },
@@ -84,16 +88,20 @@
       },
       "resources": {
         "title": "Choose what to monitor",
-        "description": "Found {server_count} server(s), {application_count} application(s) and {database_count} database(s). Choose which ones to create entities for.",
+        "description": "Found {server_count} server(s), {application_count} application(s), {database_count} database(s), {team_count} team(s) and {service_count} service(s). Choose which ones to create entities for.",
         "data": {
           "selected_servers": "Servers",
           "selected_applications": "Applications",
-          "selected_databases": "Databases"
+          "selected_databases": "Databases",
+          "selected_teams": "Teams",
+          "selected_services": "Services"
         },
         "data_description": {
           "selected_servers": "The servers to create entities for.",
           "selected_applications": "The applications to create entities for.",
-          "selected_databases": "The databases to create entities for."
+          "selected_databases": "The databases to create entities for.",
+          "selected_teams": "The teams to create entities for.",
+          "selected_services": "The services to create entities for."
         }
       }
     },
@@ -105,6 +113,9 @@
     "binary_sensor": {
       "usable": {
         "name": "Usable"
+      },
+      "personal_team": {
+        "name": "Personal team"
       }
     },
     "sensor": {
@@ -125,6 +136,9 @@
       },
       "database_type": {
         "name": "Database type"
+      },
+      "service_type": {
+        "name": "Service type"
       },
       "image": {
         "name": "Image"

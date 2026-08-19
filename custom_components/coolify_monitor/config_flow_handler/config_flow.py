@@ -116,6 +116,8 @@ class CoolifyMonitorConfigFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 "server_count": str(len(self._discovered["servers"])),
                 "application_count": str(len(self._discovered["applications"])),
                 "database_count": str(len(self._discovered["databases"])),
+                "team_count": str(len(self._discovered["teams"])),
+                "service_count": str(len(self._discovered["services"])),
             },
         )
 

@@ -2,12 +2,16 @@
 
 from typing import Any
 
+from homeassistant.util import dt as dt_util
+
 from .models import (
     CoolifyMonitorApplicationData,
     CoolifyMonitorCoordinatorData,
     CoolifyMonitorDatabaseData,
     CoolifyMonitorSelectedResources,
     CoolifyMonitorServerData,
+    CoolifyMonitorServiceData,
+    CoolifyMonitorTeamData,
 )
 
 
@@ -94,10 +98,51 @@ def _build_database(raw: dict[str, Any]) -> CoolifyMonitorDatabaseData:
     )
 
 
+def _build_service(raw: dict[str, Any]) -> CoolifyMonitorServiceData:
+    """
+    Build a service entry from its raw API representation.
+
+    Returns:
+        The service data the coordinator hands to entities.
+
+    """
+    state, health = _split_status(raw["status"])
+    server = raw["server"]
+    return CoolifyMonitorServiceData(
+        uuid=raw["uuid"],
+        name=raw["name"],
+        description=raw["description"],
+        state=state,
+        health=health,
+        service_type=raw["service_type"],
+        server_uuid=server["uuid"],
+        server_name=server["name"],
+    )
+
+
+def _build_team(raw: dict[str, Any]) -> CoolifyMonitorTeamData:
+    """
+    Build a team entry from its raw API representation.
+
+    Returns:
+        The team data the coordinator hands to entities.
+
+    """
+    return CoolifyMonitorTeamData(
+        id=str(raw["id"]),
+        name=raw["name"],
+        description=raw["description"],
+        personal_team=raw["personal_team"],
+        created_at=dt_util.parse_datetime(raw["created_at"]),
+    )
+
+
 def build_coordinator_data(
     servers: list[dict[str, Any]],
     applications: list[dict[str, Any]],
     databases: list[dict[str, Any]],
+    teams: list[dict[str, Any]],
+    services: list[dict[str, Any]],
     version: str | None = None,
 ) -> CoolifyMonitorCoordinatorData:
     """
@@ -107,6 +152,8 @@ def build_coordinator_data(
         servers: The raw server list.
         applications: The raw application list.
         databases: The raw database list.
+        teams: The raw team list.
+        services: The raw service list.
         version: The Coolify instance's version, or None when it was not fetched.
 
     Returns:
@@ -117,6 +164,8 @@ def build_coordinator_data(
         servers={server["uuid"]: _build_server(server, version) for server in servers},
         applications={app["uuid"]: _build_application(app) for app in applications},
         databases={db["uuid"]: _build_database(db) for db in databases},
+        teams={str(team["id"]): _build_team(team) for team in teams},
+        services={service["uuid"]: _build_service(service) for service in services},
     )
 
 
@@ -135,4 +184,6 @@ def filter_to_selected(
         servers={uuid: r for uuid, r in data["servers"].items() if uuid in selected["servers"]},
         applications={uuid: r for uuid, r in data["applications"].items() if uuid in selected["applications"]},
         databases={uuid: r for uuid, r in data["databases"].items() if uuid in selected["databases"]},
+        teams={team_id: r for team_id, r in data["teams"].items() if team_id in selected["teams"]},
+        services={uuid: r for uuid, r in data["services"].items() if uuid in selected["services"]},
     )
