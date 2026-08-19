@@ -177,8 +177,9 @@ this plan does not repeat them. In short: the real API client goes in
 - Test the token permission levels on your actual Coolify version (older
   versions reportedly only had "Read Only" vs. "\*" without finer-grained
   scopes — relevant for the documentation recommendation to users)
-- `manifest.json` currently sets `iot_class: cloud_polling` from the
-  initializer's default. Decide deliberately: `local_polling` fits a
-  self-hosted instance reached over the LAN, `cloud_polling` fits one
-  reached only through a public URL. See
-  `.agents/instructions/blueprint.manifest.instructions.md`.
+- **Resolved:** `manifest.json` keeps `iot_class: cloud_polling`. A Coolify
+  instance can be reached over the LAN or on a remote VPS depending on the
+  user's setup, and the integration only ever talks to a URL with no
+  assumption of local reachability — `cloud_polling` is the correct choice
+  for either case, so this was decided deliberately rather than left as the
+  initializer's default.
