@@ -11,7 +11,7 @@ async def test_running_reflects_application_status(
     hass: HomeAssistant,
 ) -> None:
     """The running sensor is on when the application state is running."""
-    state = hass.states.get("binary_sensor.demo_app_running")
+    state = hass.states.get("binary_sensor.application_demo_app_running")
 
     assert state is not None
     assert state.state == STATE_ON

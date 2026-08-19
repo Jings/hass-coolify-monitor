@@ -10,7 +10,7 @@ async def test_description_of_server(
     hass: HomeAssistant,
 ) -> None:
     """The sensor shows the description of the server."""
-    state = hass.states.get("sensor.localhost_description")
+    state = hass.states.get("sensor.server_localhost_description")
 
     assert state is not None
     assert state.state == "Demo server"
@@ -21,7 +21,7 @@ async def test_coolify_version_of_host_server(
     hass: HomeAssistant,
 ) -> None:
     """The sensor shows the Coolify instance's version, since this server is the host."""
-    state = hass.states.get("sensor.localhost_coolify_version")
+    state = hass.states.get("sensor.server_localhost_coolify_version")
 
     assert state is not None
     assert state.state == "4.0.0-beta.442"

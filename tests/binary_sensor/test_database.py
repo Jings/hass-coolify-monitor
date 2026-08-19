@@ -11,7 +11,7 @@ async def test_running_reflects_database_status(
     hass: HomeAssistant,
 ) -> None:
     """The running sensor is on when the database state is running."""
-    state = hass.states.get("binary_sensor.demo_db_running")
+    state = hass.states.get("binary_sensor.database_demo_db_running")
 
     assert state is not None
     assert state.state == STATE_ON

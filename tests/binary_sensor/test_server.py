@@ -11,7 +11,7 @@ async def test_reachable_reflects_server_status(
     hass: HomeAssistant,
 ) -> None:
     """The connectivity sensor is on when the server reports itself reachable."""
-    state = hass.states.get("binary_sensor.localhost_connectivity")
+    state = hass.states.get("binary_sensor.server_localhost_connectivity")
 
     assert state is not None
     assert state.state == STATE_ON
@@ -22,7 +22,7 @@ async def test_usable_reflects_server_status(
     hass: HomeAssistant,
 ) -> None:
     """The usable sensor is on when the server reports itself usable."""
-    state = hass.states.get("binary_sensor.localhost_usable")
+    state = hass.states.get("binary_sensor.server_localhost_usable")
 
     assert state is not None
     assert state.state == STATE_ON
