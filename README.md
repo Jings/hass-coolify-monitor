@@ -1,51 +1,40 @@
+<div align="center">
+
+<img src="custom_components/coolify_monitor/brand/icon.png" alt="Coolify Monitor" width="120" height="120" />
+
 # Coolify Monitor
+
+Monitor a self-hosted [Coolify](https://coolify.io/) instance from Home Assistant — servers, applications,
+databases, teams and services, auto-discovered through Coolify's own REST API and exposed as entities you
+choose.
 
 [![GitHub Release][releases-shield]][releases]
 [![GitHub Activity][commits-shield]][commits]
 [![License][license-shield]](LICENSE)
-
 [![hacs][hacsbadge]][hacs]
 ![Project Maintenance][maintenance-shield]
 
-<!--
-Uncomment and customize these badges if you want to use them:
-
-[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
-[![Discord][discord-shield]][discord]
--->
-
-**✨ Develop in the cloud:** Want to contribute or customize this integration? Open it directly in GitHub Codespaces - no local setup required!
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/Jings/hass-coolify-monitor?quickstart=1)
+</div>
 
 ## ✨ Features
 
-- **Easy Setup**: Simple configuration through the UI - no YAML required
-- **Air Quality Monitoring**: Track AQI and PM2.5 levels in real-time
-- **Filter Management**: Monitor filter life and get replacement alerts
-- **Smart Control**: Adjust fan speed, target humidity, and operating modes
-- **Child Lock**: Safety feature to prevent accidental changes
-- **Diagnostic Info**: View filter life, runtime hours, and device statistics
-- **Reconfigurable**: Change credentials anytime without removing the integration
-- **Options Flow**: Adjust settings like update interval after setup
-- **Custom Services**: Advanced control with built-in service calls
+- **Easy Setup**: Just your Coolify instance URL and a Read Only API token - no YAML required
+- **Auto-Discovery**: Finds every server, application, database, team and service on your instance
+- **Selective Monitoring**: Choose exactly which discovered resources become entities, grouped by category
+- **Device Grouping**: Each resource becomes its own Home Assistant device (e.g. "Application: recipe-app"),
+  so the auto-generated dashboard produces clean, readable cards
+- **Reconfigurable**: Change the instance URL or token anytime, or re-run discovery to pick up new resources
+- **Options Flow**: Adjust the poll interval or which resources are monitored after setup
+- **Reauthentication**: Home Assistant prompts you automatically if your API token is revoked or expires
+- **On-Demand Refresh**: A `refresh_data` service action fetches current state immediately, without waiting
+  for the next poll
 
-**This integration will set up the following platforms.**
+**This integration sets up the following platforms.**
 
-| Platform        | Description                                              |
-| --------------- | -------------------------------------------------------- |
-| `sensor`        | Air quality index (AQI), PM2.5, filter life, and runtime |
-| `binary_sensor` | API connection status and filter replacement alert       |
-| `switch`        | Child lock and LED display controls                      |
-| `select`        | Fan speed selection (Low/Medium/High/Auto)               |
-| `number`        | Target humidity setting (30-80%)                         |
-| `button`        | Reset filter timer after replacement                     |
-| `fan`           | Air purifier fan control with speed settings             |
-
-> [!TIP]
-> **Interactive Demo:** The entities are interconnected for demonstration.
-> Press the **Reset Filter Timer** button to see **Filter Life Remaining** update to 100%.
-> Changing the **Air Purifier** fan speed syncs the **Fan Speed** select, and vice versa.
+| Platform        | Description                                                                     |
+| --------------- | ------------------------------------------------------------------------------- |
+| `sensor`        | Description, health, resource type, server links and other details per resource |
+| `binary_sensor` | Reachability, usability, and running/healthy status per resource                |
 
 ## 🚀 Quick Start
 
@@ -55,7 +44,7 @@ Uncomment and customize these badges if you want to use them:
 
 Click the button below to open the integration directly in HACS:
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jpawlowski&repository=hass-coolify-monitor&category=integration)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Jings&repository=hass-coolify-monitor&category=integration)
 
 Then:
 
@@ -76,7 +65,12 @@ If you prefer not to use HACS:
 
 </details>
 
-### Step 2: Add and Configure the Integration
+### Step 2: Create a Coolify API Token
+
+In your Coolify instance, go to **Keys & Tokens** → **API tokens** and create a new token. Give it the
+**Read Only** ability - this integration only ever reads data, it never deploys or restarts anything.
+
+### Step 3: Add and Configure the Integration
 
 **Important:** You must have installed the integration first (see Step 1) and restarted Home Assistant!
 
@@ -88,11 +82,10 @@ Click the button below to open the configuration dialog:
 
 Follow the setup wizard:
 
-1. Enter your username
-2. Enter your password
-3. Click Submit
-
-That's it! The integration will start loading your data.
+1. Enter your Coolify instance URL (e.g. `https://coolify.example.com`) and the API token from Step 2
+2. Review the auto-discovery summary ("Found 1 server, 4 applications, 2 databases...")
+3. Choose which discovered resources you want entities for, grouped by category
+4. Click Submit
 
 #### Option 2: Manual Configuration
 
@@ -101,167 +94,125 @@ That's it! The integration will start loading your data.
 3. Search for "Coolify Monitor"
 4. Follow the same setup steps as Option 1
 
-### Step 3: Adjust Settings (Optional)
+### Step 4: Adjust Settings (Optional)
 
-After setup, you can adjust options:
+After setup, you can adjust options anytime:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find **Coolify Monitor**
 3. Click **Configure** to adjust:
-   - Update interval (how often to refresh data)
-   - Enable debug logging
+   - **Update interval** - how often to poll Coolify (1-1440 minutes, default 60)
+   - **Resources** - re-run discovery and change which resources have entities
 
-You can also **Reconfigure** your credentials anytime without removing the integration.
+You can also **Reconfigure** the instance URL or API token anytime without removing the integration.
 
-### Step 4: Start Using!
+### Step 5: Start Using!
 
-The integration creates several entities for your air purifier:
+The integration creates one device per monitored resource, with entities such as:
 
-- **Sensors**: Air quality index, PM2.5 levels, filter life remaining, total runtime
-- **Binary Sensors**: API connection status, filter replacement alert
-- **Switches**: Child lock, LED display control
-- **Select**: Fan speed (Low/Medium/High/Auto)
-- **Number**: Target humidity (30-80%)
-- **Button**: Reset filter timer
-- **Fan**: Air purifier fan control
+- **Sensors**: Description, health, Coolify version (host server only), database/service type, and which
+  server an application, database or service runs on
+- **Binary Sensors**: Reachable/usable (servers), running (applications, databases, services), personal
+  team (teams)
 
-Find all entities in **Settings** → **Devices & Services** → **Coolify Monitor** → click on the device.
+Find all entities in **Settings** → **Devices & Services** → **Coolify Monitor** → click on a device.
 
-## Available Entities
+## 🧩 Available Entities
 
-### Sensors
+Entities are only created for resources you selected during setup or in the options flow.
 
-- **Air Quality Index (AQI)**: Real-time air quality measurement (0-500 scale)
-  - Includes air quality category (Good/Moderate/Unhealthy/etc.)
-  - Health recommendations based on current AQI
-- **PM2.5**: Fine particulate matter concentration in µg/m³
-- **Filter Life Remaining** (Diagnostic): Shows remaining filter life as percentage
-- **Total Runtime** (Diagnostic): Total operating hours of the device
+### Servers
 
-### Binary Sensors
+- **Reachable** (binary_sensor): Whether Coolify can reach the server
+- **Usable** (binary_sensor, diagnostic): Whether the server is usable
+- **Description** (sensor, diagnostic)
+- **Coolify version** (sensor, diagnostic): Only populated for the server Coolify itself runs on
 
-- **API Connection**: Shows whether the connection to the API is active
-  - On: Connected and receiving data
-  - Off: Connection lost or authentication failed
-  - Shows update interval and API endpoint information
-- **Filter Replacement Needed**: Alerts when filter needs replacement
-  - Shows estimated days remaining
-  - Turns on when filter life is low
+### Applications
 
-### Switches
+- **Running** (binary_sensor): On when the application's state is `running`
+- **Description**, **Name**, **Git branch**, **Health**, **Server** (sensor, diagnostic)
+- **URL** (sensor): The application's public FQDN
 
-- **Child Lock**: Prevents accidental button presses on the device
-  - Icon changes based on state (locked/unlocked)
-- **LED Display**: Enable/disable the LED display
-  - Disabled by default - enable in entity settings if needed
+### Databases
 
-### Select
+- **Running** (binary_sensor): On when the database's state is `running`
+- **Description**, **Health**, **Database type**, **Image**, **Server** (sensor, diagnostic)
 
-- **Fan Speed**: Choose from Low, Medium, High, or Auto
-  - Icon changes dynamically based on selected speed
-  - Auto mode adjusts speed based on air quality
-  - Syncs bidirectionally with the Air Purifier fan entity
+### Teams
 
-### Number
+- **Personal team** (binary_sensor, diagnostic): On for a personal team, off for a shared team
+- **Description**, **Timestamp** (creation date, sensor, diagnostic)
 
-- **Target Humidity**: Set desired humidity level (30-80%)
-  - Adjustable in 5% increments
-  - Displayed as a slider in the UI
+### Services
 
-### Button
+- **Running** (binary_sensor): On when the service's state is `running`
+- **Description**, **Service type**, **Health**, **Server** (sensor, diagnostic)
 
-- **Reset Filter Timer**: Reset the filter life to 100%
-  - Press to reset after replacing the filter
-  - Instantly updates the Filter Life Remaining sensor
+## ⚙️ Service Actions
 
-### Fan
+### `coolify_monitor.refresh_data`
 
-- **Air Purifier**: Control the air purifier fan speed and power
-  - Three speed levels: Low, Medium, High
-  - Syncs bidirectionally with the Fan Speed select entity
-  - Turn on/off functionality
-
-## Custom Services
-
-The integration provides services for advanced automation:
-
-### `coolify_monitor.example_action`
-
-Perform a custom action (customize this for your needs).
+Fetch the current Coolify state immediately instead of waiting for the next poll.
 
 **Example:**
 
 ```yaml
-service: coolify_monitor.example_action
+action: coolify_monitor.refresh_data
 data:
-  # Add your parameters here
+  config_entry_id: 01JG3T2Q6Z9K4V8P0N5R7X2M1A
 ```
 
-### `coolify_monitor.reload_data`
+The action returns `refreshed_at`, `success` and `value_count`, so an automation can react to whether the
+refresh actually produced data.
 
-Manually refresh data from the API without waiting for the update interval.
-
-**Example:**
-
-```yaml
-service: coolify_monitor.reload_data
-```
-
-Use these services in automations or scripts for more control.
-
-## Configuration Options
+## 🔧 Configuration Options
 
 ### During Setup
 
-| Name     | Required | Description           |
-| -------- | -------- | --------------------- |
-| Username | Yes      | Your account username |
-| Password | Yes      | Your account password |
+| Name         | Required | Description                                                           |
+| ------------ | -------- | --------------------------------------------------------------------- |
+| Instance URL | Yes      | Your Coolify instance's address, including the scheme (http or https) |
+| API token    | Yes      | A Read Only API token, created in Coolify under Keys & Tokens         |
 
 ### After Setup (Options)
 
 You can change these anytime by clicking **Configure**:
 
-| Name             | Default | Description                |
-| ---------------- | ------- | -------------------------- |
-| Update Interval  | 1 hour  | How often to refresh data  |
-| Enable Debugging | Off     | Enable extra debug logging |
+| Name            | Default | Description                                               |
+| --------------- | ------- | --------------------------------------------------------- |
+| Update interval | 60 min  | How often to poll Coolify (1-1440 minutes)                |
+| Resources       | -       | Re-run discovery and change which resources are monitored |
 
-## Troubleshooting
+## 🛠️ Troubleshooting
 
 ### Authentication Issues
 
 #### Reauthentication
 
-If your credentials expire or change, Home Assistant will automatically prompt you to reauthenticate:
+If your API token expires or is revoked, Home Assistant will automatically prompt you to reauthenticate:
 
 1. Go to **Settings** → **Devices & Services**
-2. Look for **"Action Required"** or **"Configuration Required"** message on the integration
-3. Click **"Reconfigure"** or follow the prompt
-4. Enter your updated credentials
-5. Click Submit
+2. Look for an **"Action Required"** or **"Reauthenticate"** message on the integration
+3. Click it and enter a new API token
+4. Click Submit
 
-The integration will automatically resume normal operation with the new credentials.
+The integration will automatically resume normal operation with the new token.
 
 #### Manual Credential Update
 
-You can also update credentials at any time without waiting for an error:
+You can also update the URL or token at any time without waiting for an error:
 
 1. Go to **Settings** → **Devices & Services**
 2. Find **Coolify Monitor**
 3. Click the **3 dots menu** → **Reconfigure**
-4. Enter new username/password
+4. Enter the new URL and/or token
 5. Click Submit
 
 #### Connection Status
 
-Monitor your connection status with the **API Connection** binary sensor:
-
-- **On** (Connected): Integration is receiving data normally
-- **Off** (Disconnected): Connection lost or authentication failed
-  - Check the binary sensor attributes for diagnostic information
-  - Verify credentials if authentication failed
-  - Check network connectivity
+Monitor a server's connection status with its **Reachable** binary sensor - on means Coolify can reach that
+server, off means it can't.
 
 ### Enable Debug Logging
 
@@ -278,127 +229,25 @@ logger:
 
 #### Authentication Errors
 
-If you receive authentication errors:
+If setup fails with "The API token is invalid or has been revoked":
 
-1. Verify your username and password are correct
-2. Check that your account has the necessary permissions
-3. Wait for the automatic reauthentication prompt, or manually reconfigure
-4. Check the API Connection binary sensor for status
+1. Verify the token was copied correctly, with no leading/trailing whitespace
+2. Check the token wasn't revoked in Coolify under Keys & Tokens
+3. Confirm the token has at least the Read Only ability
 
-#### Device Not Responding
+#### Discovery Fails
 
-If your device is not responding:
+If setup or the options flow aborts with "Could not fetch the current resources":
 
-1. Check the **API Connection** binary sensor - it should be "On"
-2. Check your network connection
-3. Verify the device is powered on
-4. Check the integration diagnostics (Settings → Devices & Services → Coolify Monitor → 3 dots → Download diagnostics)
+1. Verify the instance URL is reachable from Home Assistant (same network, correct scheme)
+2. Check the Coolify instance itself is up
+3. Check the integration diagnostics (Settings → Devices & Services → Coolify Monitor → 3 dots → Download diagnostics)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please open an issue or pull request if you have suggestions or improvements.
-
-You have two options to set up a development environment — expand below for full details.
-
-<details>
-<summary><strong>Development Setup</strong></summary>
-
-Both options provide the same fully-configured environment with Home Assistant, Python 3.14, Node.js LTS, and all necessary tools.
-
-### Option 1: GitHub Codespaces (Recommended) ☁️
-
-Develop directly in your browser without installing anything locally!
-
-1. Click the green **"Code"** button in this repository
-2. Switch to the **"Codespaces"** tab
-3. Click **"Create codespace on main"**
-4. **Wait for setup** (2-3 minutes first time) — everything installs automatically
-5. **Review and commit** your changes in the Source Control panel (`Ctrl+Shift+G`)
-
-> [!TIP]
-> Codespaces gives you **60 hours/month free** for personal accounts. When you start Home Assistant (`script/develop`), port 8123 forwards automatically.
-
-### Option 2: Local Development with VS Code 💻
-
-#### Prerequisites
-
-You'll need these installed locally:
-
-- **A Docker-compatible container engine** — see options by platform:
-
-  | Option                                                                                                                   | 🍎 macOS | 🐧 Linux | 🪟 Windows | Notes                                                                                                                                                                                                                                     |
-  | ------------------------------------------------------------------------------------------------------------------------ | :------: | :------: | :--------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-  | [Docker Desktop](https://www.docker.com/products/docker-desktop/)                                                        |    ✅    |    ✅    |     ✅     | **Easiest starting point for all platforms.** GUI-based, well-documented, one installer. Uses WSL2 as default backend on Windows (Hyper-V also available). Installation requires admin rights; daily use does not. Free for personal use. |
-  | [OrbStack](https://orbstack.dev/) ⭐                                                                                     |    ✅    |    —     |     —      | **Recommended for macOS** once Docker Desktop feels slow. Starts in ~2s, much lighter on RAM/CPU, full Docker API compatibility. Free for personal use.                                                                                   |
-  | [Docker CE](https://docs.docker.com/engine/install/) (native) ⭐                                                         |    —     |    ✅    |     —      | **Recommended for Linux.** Install directly via your package manager — no VM, no GUI, no overhead. Free.                                                                                                                                  |
-  | [WSL2](https://learn.microsoft.com/windows/wsl/install) + [Docker CE](https://docs.docker.com/engine/install/ubuntu/) ⭐ |    —     |    —     |     ✅     | **Recommended for Windows** once you're comfortable with WSL2. Docker runs natively inside WSL2 — no GUI overhead. Requires one-time WSL2 setup. Free.                                                                                    |
-  | [Rancher Desktop](https://rancherdesktop.io/)                                                                            |    ✅    |    ✅    |     ✅     | Open source by SUSE. GUI-based, uses WSL2 on Windows. Good alternative to Docker Desktop. Free.                                                                                                                                           |
-  | [Colima](https://github.com/abiosoft/colima)                                                                             |    ✅    |    ✅    |     —      | CLI-only, very lightweight. Good for terminal-focused workflows. Free.                                                                                                                                                                    |
-
-- **VS Code** with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
-- **Git** — macOS and Linux usually have it already; see below if not, or to get a newer version:
-  - **🍎 macOS:** The system Git (`xcode-select --install`) works fine. Recommended: `brew install git` ([Homebrew](https://brew.sh/)) for a current version.
-  - **🐧 Linux:** Usually pre-installed. If not: `sudo apt install git` (or your distro's equivalent).
-  - **🪟 Windows + WSL2 ⭐:** Install Git _inside WSL2_ with `sudo apt install git`. Git on Windows itself is not needed — VS Code clones and operates entirely within WSL2.
-  - **🪟 Windows + Docker Desktop:** Install via `winget install Git.Git` or download [Git for Windows](https://git-scm.com/download/win).
-- **Hardware** — the devcontainer runs a full Home Assistant instance including Python tooling:
-
-  |          | Minimum    | Recommended                           |
-  | -------- | ---------- | ------------------------------------- |
-  | **RAM**  | 8 GB       | 16 GB or more                         |
-  | **CPU**  | 4 cores    | 8 cores or more                       |
-  | **Disk** | 10 GB free | 20 GB free (SSD strongly recommended) |
-
-> [!TIP]
-> **Not sure which Docker option to pick?** Start with [Docker Desktop](https://www.docker.com/products/docker-desktop/) — it works on all platforms, has a GUI, and needs no extra setup. The ⭐ options are faster alternatives once you're comfortable. macOS and Linux offer the best devcontainer experience — containers run with no extra VM layer and file I/O is fast. Windows works well too; this integration uses named container volumes (files live inside WSL2, not on the Windows drive) to keep performance acceptable.
-
-> [!NOTE]
-> **New to Dev Containers?** See the [VS Code Dev Containers documentation](https://code.visualstudio.com/docs/devcontainers/containers#_system-requirements) for system requirements and how to install the extension. **Once the extension is installed, you're done** — this repository already ships a complete devcontainer configuration. You don't need to follow the rest of the VS Code guide; the setup steps below are all that's needed.
-
-#### Setup Steps
-
-1. **Clone in a Dev Container:**
-
-   **🍎 macOS / 🐧 Linux:** Clone the repository and open the folder in VS Code → click **"Reopen in Container"** when prompted (or `F1` → **"Dev Containers: Reopen in Container"**).
-
-   **🪟 Windows:** In VS Code, press `F1` → **"Dev Containers: Clone Repository in Named Container Volume..."** and enter the repository URL. This keeps files inside WSL2 for best I/O performance.
-
-2. Wait for the container to build (2-3 minutes first time)
-
-3. **Review and commit** changes in Source Control (`Ctrl+Shift+G`)
-
-4. **Start developing**:
-
-   ```bash
-   script/develop  # Home Assistant runs at http://localhost:8123
-   ```
-
-> [!NOTE]
-> Both Codespaces and local DevContainer provide the exact same experience. The only difference is where the container runs (GitHub's cloud vs. your machine).
-
-</details>
-
----
-
-## 🤖 AI-Assisted Development
-
-> [!NOTE]
-> **Transparency Notice:** This integration was developed with assistance from AI coding agents (GitHub Copilot,
-> Claude, and others). AI assistance by itself neither guarantees nor rules out software quality. To make an informed
-> installation decision, review the project's stated maturity, known limitations, automated test coverage, real-device
-> testing, and the extent of human review. The maintainer should replace the fields below with accurate project-specific
-> details rather than implying checks that were not performed. See the blueprint's [`AI_POLICY.md`](AI_POLICY.md) for
-> guidance.
->
-> - **AI assistance:** limited / substantial / predominant
-> - **Human review:** complete / partial / spot-checked / not performed
-> - **Automated tests:** [describe or state "not performed"]
-> - **Real-device or service testing:** [describe or state "not performed"]
-> - **Maturity and known limitations:** [describe]
->
-> If you encounter unexpected behavior, please [open an issue](../../issues) on GitHub.
->
-> _This section can be removed or modified if AI assistance was not used in your integration's development._
+Contributions are welcome! Please open an issue or pull request if you have suggestions or improvements. See
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to set up a development environment (GitHub Codespaces or a local
+VS Code devcontainer are both supported) and submit changes.
 
 ---
 
@@ -420,11 +269,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 [maintenance-shield]: https://img.shields.io/badge/maintainer-%40Jings-blue.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/Jings/hass-coolify-monitor.svg?style=for-the-badge
 [releases]: https://github.com/Jings/hass-coolify-monitor/releases
-[user_profile]: https://github.com/jpawlowski
-
-<!-- Optional badge definitions - uncomment if needed:
-[buymecoffee]: https://www.buymeacoffee.com/jpawlowski
-[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
-[discord]: https://discord.gg/Qa5fW2R
-[discord-shield]: https://img.shields.io/discord/330944238910963714.svg?style=for-the-badge
--->
+[user_profile]: https://github.com/Jings

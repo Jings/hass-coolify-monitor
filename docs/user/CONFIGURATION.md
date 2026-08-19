@@ -10,21 +10,19 @@ These options are configured during initial setup via the Home Assistant UI.
 
 #### Connection Settings
 
-| Option      | Type    | Required | Default | Description                                  |
-| ----------- | ------- | -------- | ------- | -------------------------------------------- |
-| **Host**    | string  | Yes      | -       | Hostname or IP address of the device/service |
-| **Port**    | integer | No       | 8080    | Connection port                              |
-| **API Key** | string  | Yes\*    | -       | Authentication key or token                  |
-| **Use SSL** | boolean | No       | false   | Enable HTTPS connection                      |
+| Option           | Type   | Required | Default | Description                                                           |
+| ---------------- | ------ | -------- | ------- | --------------------------------------------------------------------- |
+| **Instance URL** | string | Yes      | -       | Your Coolify instance's address, including the scheme (http or https) |
+| **API token**    | string | Yes      | -       | A Read Only API token, created in Coolify under Keys & Tokens         |
 
-\*Required if the device/service requires authentication.
+Both are validated together by calling Coolify's `/servers` endpoint — a successful response proves the URL
+and token both work.
 
-#### Update Settings
+#### Resource Selection
 
-| Option              | Type              | Required | Default  | Description                                         |
-| ------------------- | ----------------- | -------- | -------- | --------------------------------------------------- |
-| **Update Interval** | integer (seconds) | No       | 300      | How often to poll for updates (minimum: 30 seconds) |
-| **Name**            | string            | No       | "Device" | Friendly name for the integration instance          |
+After the connection is validated, Home Assistant auto-discovers every server, application, database, team
+and service on the instance and lets you choose which ones get entities, grouped by category. Everything is
+preselected by default.
 
 ### Options Flow (Reconfiguration)
 
@@ -33,15 +31,17 @@ After initial setup, you can modify settings:
 1. Go to **Settings** → **Devices & Services**
 2. Find "Coolify Monitor"
 3. Click **Configure**
-4. Modify settings
-5. Click **Submit**
+4. Choose **Update interval** or **Resources**
+5. Modify settings, then click **Submit**
 
 **Available options:**
 
-- Update interval
-- Name/identifier
-- Connection timeout
-- Additional features (device-specific)
+- **Update interval** — how often to poll Coolify, in minutes (1–1440, default 60)
+- **Resources** — re-runs discovery (so newly added Coolify resources become selectable) and lets you change
+  which resources are monitored
+
+Changing the instance URL or API token itself is a **Reconfigure**, not an option — see
+[Troubleshooting → Manual Credential Update](../../README.md#manual-credential-update) in the main README.
 
 ## Entity Configuration
 
@@ -58,7 +58,6 @@ Customize entities via the UI or `configuration.yaml`:
    - Entity ID
    - Name
    - Icon
-   - Device class (for applicable entities)
    - Area assignment
 
 #### Via configuration.yaml
@@ -66,10 +65,8 @@ Customize entities via the UI or `configuration.yaml`:
 ```yaml
 homeassistant:
   customize:
-    sensor.device_name_sensor:
-      friendly_name: "Custom Sensor Name"
-      icon: mdi:custom-icon
-      unit_of_measurement: "units"
+    sensor.application_recipe_app_health:
+      friendly_name: "recipe-app health"
 ```
 
 ### Disabling Entities
@@ -81,15 +78,16 @@ If you don't need certain entities:
 3. Click it, then click **Settings** icon
 4. Toggle **Enable entity** off
 
-Disabled entities won't update or consume resources.
+Disabled entities won't update or consume resources. To stop monitoring an entire resource instead, deselect
+it in the options flow's **Resources** step — see above.
 
 ## Services
 
-The integration provides the following services:
+The integration provides the following service action:
 
 ### `coolify_monitor.refresh_data`
 
-Fetch the current device state immediately instead of waiting for the next poll.
+Fetch the current Coolify state immediately instead of waiting for the next poll.
 
 **Service data:**
 
@@ -126,37 +124,32 @@ automation:
 
 ### Multiple Instances
 
-You can add multiple instances of this integration for different devices:
+You can add multiple instances of this integration for different Coolify instances:
 
 1. Go to **Settings** → **Devices & Services**
 2. Click **+ Add Integration**
 3. Search for "Coolify Monitor"
-4. Configure with different connection details
+4. Configure with a different instance URL and token
 
-Each instance creates separate entities with unique entity IDs.
-
-### Network Configuration
-
-If the device is on a different network or behind a firewall:
-
-- Ensure ports are open (default: 8080)
-- Configure port forwarding if needed
-- Consider VPN for remote access
-- Some devices may require static IP addresses
+Each instance creates separate devices and entities with unique entity IDs. Pointing a second entry at the
+same instance is rejected — the discovered server's unique ID is compared against every existing entry.
 
 ### Polling Behavior
 
-The integration uses polling to fetch updates:
+The integration polls Coolify's REST API on a fixed interval:
 
-- **Minimum interval:** 30 seconds (prevents overloading the device)
-- **Recommended interval:** 5 minutes (default)
-- **Longer intervals:** Save resources but reduce responsiveness
+- **Minimum interval:** 1 minute
+- **Maximum interval:** 1440 minutes (24 hours)
+- **Default interval:** 60 minutes
+
+Coolify's own API defaults to a 200 requests/minute rate limit; stay well under that, especially with a short
+interval on an instance with many resources selected.
 
 Adjust based on your needs:
 
-- Real-time monitoring: 30-60 seconds
-- Regular updates: 5 minutes
-- Slow-changing values: 15-30 minutes
+- Frequent status checks: 1–5 minutes
+- Regular monitoring: 60 minutes (default)
+- Slow-changing values (teams, rarely-deployed apps): several hours
 
 ## Diagnostic Data
 
@@ -169,49 +162,12 @@ The integration provides diagnostic data for troubleshooting:
 
 Diagnostic data includes:
 
-- Connection status
-- Last update timestamp
-- API response data
-- Entity states
-- Error history
+- Config entry state and version
+- Coordinator update status and last error, if any
+- The current coordinator data for every monitored resource
 
-**Privacy note:** Diagnostic data may contain sensitive information. Review before sharing.
-
-## Blueprints
-
-The integration works with Home Assistant Blueprints for reusable automations:
-
-### Example Blueprint
-
-```yaml
-blueprint:
-  name: Coolify Monitor Alert
-  description: Send notification when sensor exceeds threshold
-  domain: automation
-  input:
-    sensor_entity:
-      name: Sensor
-      selector:
-        entity:
-          domain: sensor
-          integration: coolify_monitor
-    threshold:
-      name: Threshold
-      selector:
-        number:
-          min: 0
-          max: 100
-
-trigger:
-  - trigger: numeric_state
-    entity_id: !input sensor_entity
-    above: !input threshold
-
-action:
-  - action: notify.notify
-    data:
-      message: "Sensor exceeded threshold!"
-```
+**Privacy note:** The API token is always redacted from diagnostic downloads. Review the rest before sharing,
+since it includes your Coolify resource names and URLs.
 
 ## Configuration Examples
 
@@ -224,8 +180,8 @@ See [EXAMPLES.md](./EXAMPLES.md) for complete automation and dashboard examples.
 If the integration fails to load after configuration:
 
 1. Check Home Assistant logs for errors
-2. Verify connection details are correct
-3. Test connectivity from Home Assistant to the device
+2. Verify the instance URL and API token are still correct
+3. Test connectivity from Home Assistant to the Coolify instance
 4. Try removing and re-adding the integration
 
 ### Options Don't Save
@@ -233,7 +189,7 @@ If the integration fails to load after configuration:
 If configuration changes aren't persisted:
 
 1. Check for validation errors in the UI
-2. Ensure values are within allowed ranges
+2. Ensure the update interval is within 1–1440 minutes
 3. Review logs for detailed error messages
 4. Try restarting Home Assistant
 

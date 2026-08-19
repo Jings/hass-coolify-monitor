@@ -6,7 +6,8 @@ This guide will help you install and set up the Coolify Monitor custom integrati
 
 - Home Assistant 2025.7.0 or newer
 - HACS (Home Assistant Community Store) installed
-- Network connectivity to [external service/device]
+- Network connectivity from Home Assistant to your Coolify instance
+- A Coolify API token (see below)
 
 ## Installation
 
@@ -30,6 +31,12 @@ This guide will help you install and set up the Coolify Monitor custom integrati
 3. Copy it to `custom_components/coolify_monitor/` in your Home Assistant configuration directory
 4. Restart Home Assistant
 
+## Create a Coolify API Token
+
+In your Coolify instance, go to **Keys & Tokens** → **API tokens** and create a new token. Give it the
+**Read Only** ability — this integration only ever reads data through Coolify's `/api/v1` endpoints; it
+never deploys, restarts, or otherwise changes anything.
+
 ## Initial Setup
 
 After installation, add the integration:
@@ -43,52 +50,53 @@ After installation, add the integration:
 
 Enter the required connection details:
 
-- **Host/IP Address:** The hostname or IP address of your device/service
-- **API Key/Token:** Your authentication credentials (if applicable)
-- **Port:** Connection port (default: 8080)
+- **Instance URL:** Your Coolify instance's address, including the scheme (e.g. `https://coolify.example.com`)
+- **API token:** The Read Only token created above
 
-Click **Submit** to test the connection.
+Click **Submit** to test the connection. Home Assistant validates both the URL and the token by calling
+Coolify's `/servers` endpoint.
 
-### Step 2: Configuration Options
+### Step 2: Review Discovery
 
-Configure optional settings:
+Home Assistant queries your Coolify instance for every server, application, database, team and service, and
+shows a summary (e.g. "Found 1 server, 4 applications, 2 databases, 1 team and 1 service").
 
-- **Update Interval:** How often to poll for updates (default: 5 minutes)
-- **Name:** Friendly name for this integration instance
+### Step 3: Choose What to Monitor
+
+Pick which discovered resources you want entities for, grouped by category (Servers / Applications /
+Databases / Teams / Services). Everything is preselected by default — deselect anything you don't need.
 
 Click **Submit** to complete setup.
 
 ## What Gets Created
 
-After successful setup, the integration creates:
+After successful setup, the integration creates one Home Assistant device per selected resource, for
+example "Server: localhost" or "Application: recipe-app".
 
 ### Devices
 
-- **Device Name:** Main device representing your connected service/hardware
-  - Model information
-  - Software version
-  - Configuration URL (link to device web interface)
+Each device carries:
+
+- A name prefixed with its resource kind (Server / Application / Database / Team / Service)
+- `Coolify` as the manufacturer, and the resource kind as the model
+- For applications, databases and services: a link back to the server device they run on
 
 ### Entities
 
-The following entities are automatically created:
+The following entity kinds are created, depending on which resources you selected:
 
 #### Sensors
 
-- `sensor.<device_name>_<sensor_name>` - Descriptive sensor measurements
-- More sensors as applicable to your setup
+- `sensor.<device_name>_description` — the resource's description, where Coolify provides one
+- `sensor.<device_name>_health`, `..._database_type`, `..._service_type`, `..._server`, and other
+  resource-specific details — see the main [README](../../README.md#available-entities) for the full list per
+  resource kind
 
 #### Binary Sensors
 
-- `binary_sensor.<device_name>_<sensor_name>` - On/off status indicators
-
-#### Switches
-
-- `switch.<device_name>_<switch_name>` - Controllable on/off switches
-
-#### Other Platforms
-
-Additional entities may be created depending on your device capabilities.
+- `binary_sensor.<device_name>_connectivity` / `..._usable` — servers
+- `binary_sensor.<device_name>_running` — applications, databases, services
+- `binary_sensor.<device_name>_personal_team` — teams
 
 ## First Steps
 
@@ -101,68 +109,78 @@ Add entities to your dashboard:
 3. Choose card type (e.g., "Entities", "Glance")
 4. Select entities from "Coolify Monitor"
 
-Example entities card:
+Example entities card for one application:
 
 ```yaml
 type: entities
-title: Coolify Monitor
+title: recipe-app
 entities:
-  - sensor.device_name_sensor
-  - binary_sensor.device_name_connectivity
-  - switch.device_name_switch
+  - binary_sensor.application_recipe_app_running
+  - sensor.application_recipe_app_health
+  - sensor.application_recipe_app_url
 ```
 
 ### Automations
 
 Use the integration in automations:
 
-**Example - Trigger on sensor change:**
+**Example — notify when an application stops running:**
 
 ```yaml
 automation:
-  - alias: "React to sensor value"
+  - alias: "Alert when recipe-app stops"
     trigger:
       - trigger: state
-        entity_id: sensor.device_name_sensor
+        entity_id: binary_sensor.application_recipe_app_running
+        to: "off"
+        for:
+          minutes: 5
     action:
       - action: notify.notify
         data:
-          message: "Sensor changed to {{ trigger.to_state.state }}"
+          message: "recipe-app is no longer running"
 ```
 
-**Example - Control switch based on time:**
+**Example — refresh data on a schedule:**
 
 ```yaml
 automation:
-  - alias: "Turn on in morning"
+  - alias: "Refresh Coolify data every morning"
     trigger:
       - trigger: time
         at: "07:00:00"
     action:
-      - action: switch.turn_on
-        target:
-          entity_id: switch.device_name_switch
+      - action: coolify_monitor.refresh_data
+        data:
+          config_entry_id: 01JG3T2Q6Z9K4V8P0N5R7X2M1A
 ```
 
 ## Troubleshooting
 
 ### Connection Failed
 
-If setup fails with connection errors:
+If setup fails with "Unable to connect to the Coolify instance":
 
-1. Verify the host/IP address is correct and reachable
-2. Check that the API key/token is valid
-3. Ensure no firewall is blocking the connection
-4. Check Home Assistant logs for detailed error messages
+1. Verify the instance URL is correct and reachable from Home Assistant
+2. Check that the Coolify instance itself is running
+3. Check Home Assistant logs for detailed error messages
+
+### Invalid Token
+
+If setup fails with "The API token is invalid or has been revoked":
+
+1. Verify the token was copied correctly
+2. Check the token wasn't revoked in Coolify under Keys & Tokens
 
 ### Entities Not Updating
 
 If entities show "Unavailable" or don't update:
 
-1. Check that the device/service is online
-2. Verify API credentials haven't expired
+1. Check that the Coolify instance is online and reachable
+2. Verify the API token hasn't expired or been revoked — Home Assistant should prompt for reauthentication
+   automatically if it has
 3. Review logs: **Settings** → **System** → **Logs**
-4. Try reloading the integration
+4. Try reloading the integration, or call the `coolify_monitor.refresh_data` service action
 
 ### Debug Logging
 
